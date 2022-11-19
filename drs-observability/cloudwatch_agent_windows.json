@@ -1,0 +1,104 @@
+{
+  "metrics": {
+    "aggregation_dimensions": [
+      []
+    ],
+    "metrics_collected": {
+      "procstat": [
+        {
+          "exe": "windows_service_wrapper",
+          "measurement": [
+            "cpu_time",
+            "cpu_time_system",
+            "cpu_time_user",
+            "read_bytes",
+            "write_bytes",
+            "read_count",
+            "write_count",
+            "memory_data",
+            "memory_locked",
+            "memory_rss"
+          ]
+        }],
+      "LogicalDisk": {
+        "measurement": [
+          {
+            "name": "Current Disk Queue Length"
+          },
+          {
+            "name": "Avg. Disk Queue Length"
+          },
+          {
+            "name": "Avg. Disk Read Queue Length"
+          },
+          {
+            "name": "Avg. Disk Write Queue Length"
+          },
+          {
+            "name": "% Idle Time",
+            "unit": "Percent"
+          },
+          {
+            "name": "% Disk Time",
+            "unit": "Percent"
+          },
+          {
+            "name": "% Disk Read Time",
+            "unit": "Percent"
+          },
+          {
+            "name": "% Disk Write Time",
+            "unit": "Percent"
+          },
+          {
+            "name": "Disk Bytes/sec"
+          },
+          {
+            "name": "Disk Write Bytes/sec"
+          },
+          {
+            "name": "Disk Writes/sec"
+          },
+          {
+            "name": "Disk Read Bytes/sec"
+          },
+          {
+            "name": "Disk Reads/sec"
+          },
+          {
+            "name": "Disk Transfers/sec"
+          }
+        ],
+        "resources": [
+          "*"
+        ]
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "c:\\ProgramData\\Amazon\\AmazonCloudWatchAgent\\Logs\\amazon-cloudwatch-agent.log",
+            "log_group_name": "amazon-cloudwatch-agent.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "C:\\Program Files (x86)\\AWS Replication Agent\\agent.log.0",
+            "log_group_name": "aws-replication-agent",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "C:\\Program Files (x86)\\AWS Replication Agent\\java_error.log",
+            "log_group_name": "java_error.log",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    },
+    "log_stream_name": "{instance_id}"
+  }
+
+
+}

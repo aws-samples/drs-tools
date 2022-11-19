@@ -1,0 +1,3 @@
+Name,ExcludeAll,ExcludeNetworkConfiguration
+DC2,false,true
+SERVERB,false,true

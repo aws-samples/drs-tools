@@ -1,0 +1,107 @@
+{
+	"BlockDeviceMappings": [
+		{
+			"DeviceName": "/dev/xvda",
+			"Ebs": {
+				"DeleteOnTermination": null,
+				"Encrypted": null,
+				"Iops": 400,
+				"KmsKeyId": null,
+				"SnapshotId": null,
+				"Throughput": null,
+				"VolumeSize": 8,
+				"VolumeType": "io1"
+			},
+			"NoDevice": null,
+			"VirtualName": null
+		}
+	],
+	"CapacityReservationSpecification": null,
+	"CpuOptions": null,
+	"CreditSpecification": null,
+	"DisableApiTermination": null,
+	"EbsOptimized": false,
+	"ElasticGpuSpecifications": null,
+	"ElasticInferenceAccelerators": null,
+	"EnclaveOptions": null,
+	"HibernationOptions": null,
+	"IamInstanceProfile": {
+		"Arn": null,
+		"Name": "AWSElasticDisasterRecoveryRecoveryInstanceRole"
+	},
+	"ImageId": null,
+	"InstanceInitiatedShutdownBehavior": "",
+	"InstanceMarketOptions": null,
+	"InstanceRequirements": null,
+	"InstanceType": "t3.small",
+	"KernelId": null,
+	"KeyName": null,
+	"LicenseSpecifications": null,
+	"MetadataOptions": null,
+	"Monitoring": null,
+	"NetworkInterfaces": [
+		{
+			"AssociateCarrierIpAddress": null,
+			"AssociatePublicIpAddress": null,
+			"DeleteOnTermination": null,
+			"Description": null,
+			"DeviceIndex": 0,
+			"Groups": null,
+			"InterfaceType": null,
+			"Ipv4PrefixCount": null,
+			"Ipv4Prefixes": null,
+			"Ipv6AddressCount": null,
+			"Ipv6Addresses": null,
+			"Ipv6PrefixCount": null,
+			"Ipv6Prefixes": null,
+			"NetworkCardIndex": null,
+			"NetworkInterfaceId": null,
+			"PrivateIpAddress": null,
+			"PrivateIpAddresses": null,
+			"SecondaryPrivateIpAddressCount": null,
+			"SubnetId": null
+		}
+	],
+	"Placement": null,
+	"PrivateDnsNameOptions": null,
+	"RamDiskId": null,
+	"SecurityGroupIds": null,
+	"SecurityGroups": null,
+    "TagSpecifications": [
+        {
+            "ResourceType": "volume",
+            "Tags": [
+                {
+                    "Key": "AWSElasticDisasterRecoverySourceServerID",
+					"Value": "s-xxxxxxxxxxxxxxxxx"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "YourServerNameHere"
+                },
+                {
+                    "Key": "AWSElasticDisasterRecoveryManaged",
+                    "Value": "drs.amazonaws.com"
+                }
+            ]
+        },
+        {
+            "ResourceType": "instance",
+            "Tags": [
+                {
+                    "Key": "AWSElasticDisasterRecoverySourceServerID",
+					"Value": "s-xxxxxxxxxxxxxxxxx"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "YourServerNameHere"
+                },
+                {
+                    "Key": "AWSElasticDisasterRecoveryManaged",
+                    "Value": "drs.amazonaws.com"
+                }
+            ]
+        }
+    ],
+	"UserData": null
+}

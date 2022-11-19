@@ -1,0 +1,71 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys metric filters for warning and error messages written to the AWS DRS Agent log file
+Parameters:
+  DrsAgentLogGroupName:
+    Type: String
+    Description: Enter the AWS CloudWatch Log Group name for the DRS Replication Agent log files
+    Default: aws-replication-agent
+
+Resources:
+
+  DrsWarningMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterName: DrsReplicationAgentWarnings
+      FilterPattern: "WARNING"
+      LogGroupName: !Ref DrsAgentLogGroupName
+      MetricTransformations:
+        -
+          MetricName: DrsReplicationAgentWarnings
+          MetricNamespace: DRSCustomMetrics
+          MetricValue: 1
+          Unit: Count
+
+  DrsErrorMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterName: DrsReplicationAgentErrors
+      FilterPattern: "ERROR"
+      LogGroupName: !Ref DrsAgentLogGroupName
+      MetricTransformations:
+        -
+          MetricName: DrsReplicationAgentErrors
+          MetricNamespace: DRSCustomMetrics
+          MetricValue: 1
+          Unit: Count
+
+
+#  This currently doesn't work because the replication agent is appending ">>>" at the end of each JSON log statement.  Once fixed, this filter provides better monitoring
+#  DrsWarningMetricFilter:
+#    Type: AWS::Logs::MetricFilter
+#    Properties:
+#      FilterName: DrsReplicationAgentWarnings
+#      FilterPattern: '{ $.log.level = "WARNING" }'
+#      LogGroupName: !Ref DrsAgentLogGroupName
+#      MetricTransformations:
+#        - Dimensions:
+#            - Key: hostname
+#              Value: '$.origin.hostname'
+#          MetricName: DrsReplicationAgentWarnings
+#          MetricNamespace: DRSCustomMetrics
+#          MetricValue: 1
+#          Unit: Count
+
+#  This currently doesn't work because the replication agent is appending ">>>" at the end of each JSON log statement.  Once fixed, this filter provides better monitoring
+#  DrsErrorsMetricFilter:
+#    Type: AWS::Logs::MetricFilter
+#    Properties:
+#      FilterName: DrsReplicationAgentErrors
+#      FilterPattern: '{ $.log.level = "ERROR" }'
+#      LogGroupName: !Ref DrsAgentLogGroupName
+#      MetricTransformations:
+#        - Dimensions:
+#            - Key: hostname
+#              Value: '$.origin.hostname'
+#          MetricName: DrsReplicationAgentErrors
+#          MetricNamespace: DRSCustomMetrics
+#          MetricValue: 1
+#          Unit: Count

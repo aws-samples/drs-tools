@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys an AWS DRS Notification Event Bus, EventBus Rules and SNS Notifications to a Centralized account
+Parameters:  
+  AwsOrganizationId:
+    Type: String
+    Description: AWS Organizations ID For AWS DRS Environment
+  DrsSnsSubscriptionEmailAddress:
+    Type: String
+    Description: Email Address to be used to subscribe to new AWS DRS SNS Topic for Notifications
+  DrsEventBusName:
+    Type: String
+    Description: Enter a name for AWS EventBridge Custom EventBus to process AWS DRS Related events
+    Default: DrsNotificationEventBus
+Resources:
+  DrsEventBus:
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: !Ref DrsEventBusName
+
+
+  DrsEventBusPolicy: 
+    Type: AWS::Events::EventBusPolicy
+    DependsOn: DrsEventBus
+    Properties: 
+      StatementId: "OrganizationIdEventBusAccess"
+      Principal: "*"
+      Action: events:PutEvents
+      EventBusName: !Ref DrsEventBus
+      Condition:
+        Type: StringEquals
+        Key: aws:PrincipalOrgID
+        Value: !Ref AwsOrganizationId
+
+  DrsFailedRecoveryInstanceEventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: AWS EventBridge Rule for handling SNS Notifications of Failed DRS Server Recovery
+      EventBusName: !Ref DrsEventBus
+      State: ENABLED
+      EventPattern: >-
+        {
+          "source": ["aws.drs"],
+          "detail-type": ["DRS Source Server Launch Result"],
+          "detail": {
+            "state": ["RECOVERY_LAUNCH_FAILED"]
+          }
+        }
+      Targets:
+        - Arn: !Ref DrsSnsTopic
+          Id: DrsFailedRecoveryInstances
+
+  DrsStalledAgentEventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: AWS EventBridge Rule for handling SNS Notifications of Stalled DRS Source Server Agents
+      EventBusName: !Ref DrsEventBus
+      State: ENABLED
+      EventPattern: >-
+        {
+          "source": ["aws.drs"],
+          "detail-type": ["DRS Source Server Data Replication Stalled Change"]
+        }
+      Targets:
+        - Arn: !Ref DrsSnsTopic
+          Id: DrsStalledReplication
+
+  DrsSnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: DrsNotificationTopic
+
+  DrsSnsTopicSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: DrsSnsTopic
+    Properties:
+      Endpoint: !Ref DrsSnsSubscriptionEmailAddress
+      Protocol: email
+      TopicArn: !Ref DrsSnsTopic
+
+
+  DrsSnsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    DependsOn: DrsSnsTopic
+    Properties:
+      Topics:
+        - !Ref DrsSnsTopic
+      PolicyDocument:
+        Id: DrsSnsTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AWS Events SNS Publish
+          Effect: Allow
+          Principal: 
+            Service: "events.amazonaws.com"
+          Action: sns:Publish
+          Resource: !Ref DrsSnsTopic

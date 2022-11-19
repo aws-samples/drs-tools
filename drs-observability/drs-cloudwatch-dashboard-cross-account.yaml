@@ -1,0 +1,104 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys AWS DRS Lag and BackLog Dashboard for AWS CloudWatch
+Parameters:
+  DashBoardName:
+    Type: String
+    Description: Enter a name for the AWS DRS Cross Account CloudWatch Dashboard
+    Default: 'DRS-CrossAccount'
+  AccountId1:
+    Type: String
+    Description: Enter the AWS Account ID of the 1st AWS DRS Account
+    Default: ''
+  AccountId2:
+    Type: String
+    Description: Enter the AWS Account ID of the 2nd AWS DRS Account
+    Default: ''
+Resources:
+  DrsDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardBody: !Sub >- 
+        {
+            "widgets": [
+                {
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ { "expression": "SELECT AVG(LagDuration) FROM SCHEMA(\"AWS/DRS\", SourceServerID) GROUP BY SourceServerID ORDER BY AVG() DESC", "label": "LagDuration-${AccountId1}-${AWS::Region}", "id": "q1" } ]
+                        ],
+                        "accountId": "${AccountId1}",
+                        "region": "${AWS::Region}",
+                        "stat": "Average",
+                        "period": 300,
+                        "title": "LagDuration-${AccountId1}-${AWS::Region}"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 6,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ { "expression": "SELECT AVG(Backlog) FROM SCHEMA(\"AWS/DRS\", SourceServerID) GROUP BY SourceServerID ORDER BY AVG() ASC", "label": "BackLog-${AccountId1}-${AWS::Region}", "id": "q2"} ]
+                        ],
+                        "accountId": "${AccountId1}",
+                        "region": "${AWS::Region}",
+                        "stat": "Average",
+                        "period": 300,
+                        "title": "Backlog-${AccountId1}-${AWS::Region}"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 0,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ { "expression": "SELECT AVG(LagDuration) FROM SCHEMA(\"AWS/DRS\", SourceServerID) GROUP BY SourceServerID ORDER BY AVG() DESC", "label": "LagDuration-${AccountId2}-${AWS::Region}", "id": "q3"} ]
+                        ],
+                        "accountId": "${AccountId2}",
+                        "region": "${AWS::Region}",
+                        "stat": "Average",
+                        "period": 300,
+                        "title": "LagDuration-${AccountId2}-${AWS::Region}"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 6,
+                    "y": 0,
+                    "width": 6,
+                    "height": 6,
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ { "expression": "SELECT AVG(Backlog) FROM SCHEMA(\"AWS/DRS\", SourceServerID) GROUP BY SourceServerID ORDER BY AVG() ASC", "label": "BackLog-${AccountId2}-${AWS::Region}", "id": "q4"} ]
+                        ],
+                        "accountId": "${AccountId2}",
+                        "region": "${AWS::Region}",
+                        "stat": "Average",
+                        "period": 300,
+                        "title": "Backlog-${AccountId2}-${AWS::Region}"
+                    }
+                }
+            ]
+        }
+      DashboardName: !Sub ${DashBoardName}

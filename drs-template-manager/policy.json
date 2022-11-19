@@ -1,0 +1,19 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "drs:DescribeSourceServers",
+                "ec2:ModifyLaunchTemplate",
+                "s3:ListBucket",
+                "ec2:CreateLaunchTemplateVersion",
+                "drs:GetLaunchConfiguration"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

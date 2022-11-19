@@ -1,0 +1,63 @@
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/lib/aws-replication-agent/java_error.log",
+            "log_group_name": "java_error.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/lib/aws-replication-agent/agent.log*",
+            "log_group_name": "aws-replication-agent",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    },
+    "log_stream_name": "{instance_id}",
+    "force_flush_interval" : 15
+  },
+  "metrics": {
+    "aggregation_dimensions": [
+      []
+    ],
+    "metrics_collected": {
+      "procstat": [
+        {
+          "pattern": "com.amazonaws.cloudendure.drs.agent.Main",
+          "measurement": [
+            "cpu_time",
+            "cpu_time_system",
+            "cpu_time_user",
+            "read_bytes",
+            "write_bytes",
+            "read_count",
+            "write_count",
+            "memory_data",
+            "memory_locked",
+            "memory_rss"
+          ]
+        }
+        ],
+      "diskio": {
+        "measurement": [
+          "reads",
+          "writes",
+          "write_time",
+          "read_time",
+          "write_bytes",
+          "read_bytes",
+          "io_time",
+          "iops_in_progress"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ]
+      }
+
+    }
+  }
+}

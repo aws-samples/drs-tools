@@ -1,0 +1,72 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  DRAutomationAccountId:
+    Type: String
+    Description: AWS account id of central DR automation account
+Resources:
+  DRConfigurationSynchronizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: !Ref DRAutomationAccountId
+        Version: '2012-10-17'
+      Description: Assumed by the DR configuration synchronizer lambda role
+      RoleName: drs-configuration-synchronizer-account-role
+  DRConfigurationSynchronizerRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - drs:DescribeSourceServers
+              - drs:GetLaunchConfiguration
+              - drs:GetReplicationConfiguration
+              - drs:UpdateLaunchConfiguration
+              - drs:UpdateReplicationConfiguration
+              - drs:ListTagsForResource
+              - drs:TagResource
+              - drs:UntagResource
+              - kms:DescribeKey
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcs
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeLaunchTemplateVersions
+              - ec2:ModifyLaunchTemplate
+              - ec2:CreateLaunchTemplateVersion
+            Effect: Allow
+            Resource: '*'
+          - Action: ec2:CreateSecurityGroup
+            Condition:
+              'Null':
+                aws:RequestTag/AWSElasticDisasterRecoveryManaged: 'false'
+              Bool:
+                aws:ViaAWSService: 'true'
+            Effect: Allow
+            Resource: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+          - Action: ec2:CreateTags
+            Condition:
+              StringEquals:
+                ec2:CreateAction:
+                  - CreateSecurityGroup
+              Bool:
+                aws:ViaAWSService: 'true'
+            Effect: Allow
+            Resource: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+        Version: '2012-10-17'
+      PolicyName: DRConfigurationSynchronizerRolePolicy
+      Roles:
+        - !Ref 'DRConfigurationSynchronizerRole'
+
+Outputs:
+  DRConfigurationSynchronizerRoleArn:
+    Description: ARN of the DR configuration synchronizer role
+    Value: !GetAtt 'DRConfigurationSynchronizerRole.Arn'

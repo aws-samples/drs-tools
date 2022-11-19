@@ -1,0 +1,79 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create role allowing the synch_source_server_tags AWS lambda function to update tags on DRS source servers with tags from associated EC2 instances
+Parameters:
+  OrganizationID:
+    Description: The AWS Organizations ID within which the DRS service and synch_soure_server_tags AWS Lambda function is running.  Specify if using AWS Organizations.
+    Type: String
+    Default: ""
+  SourceAccountNumber:
+    Description: The AWS Account ID where the synch_soure_server_tags AWS Lambda function is running.  Specify if not using AWS organizations
+    Type: String
+    Default: ""
+
+Conditions:
+  CreateOrgRole:
+    !Not [!Equals [!Ref OrganizationID, ""]]
+  CreateAccountRole:
+    !Not [!Equals [!Ref SourceAccountNumber, ""]]
+
+Resources:
+  EC2ToDRSTagReplicatorAccountRole:
+    Type: AWS::IAM::Role
+    Condition: CreateAccountRole
+    Properties:
+      RoleName:  "synch_source_server_tags"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref SourceAccountNumber
+            Action:
+              - 'sts:AssumeRole'
+      Path: "/"
+      Policies:
+        - PolicyName:   "UpdateDRSTags"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: UpdateDRSTags
+                Effect: Allow
+                Action:
+                  - drs:TagResource
+                  - drs:DescribeSourceServers
+                Resource: "*"
+
+
+  EC2ToDRSTagReplicatorOrgRole:
+    Type: AWS::IAM::Role
+    Condition: CreateOrgRole
+    Properties:
+      RoleName:  "synch_source_server_tags"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              ForAnyValue:StringLike:
+                aws:PrincipalOrgPaths:
+                  - !Sub "${OrganizationID}/*"
+      Path: "/"
+      Policies:
+        - PolicyName:   "UpdateDRSTags"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: UpdateDRSTags
+                Effect: Allow
+                Action:
+                  - drs:TagResource
+                  - drs:DescribeSourceServers
+                Resource: "*"
+

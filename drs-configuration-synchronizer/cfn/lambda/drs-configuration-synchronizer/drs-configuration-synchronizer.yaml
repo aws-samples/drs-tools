@@ -1,0 +1,131 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  drs-configuration-synchronizer
+
+  DRS Configuration Synchronizer AWS Lambda Function
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+  Api:
+    TracingEnabled: True
+
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: ARN of the SNS topic to which the configuration synchronizer sends notifications
+  DRAutomationBucketName:
+    Type: String
+    Description: Name of the existing Amazon S3 bucket created for DRS automation.
+
+Resources:
+  ConfigurationSynchronizerFunction:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: False positive - permission to CloudWatch logs is provided by external role.
+          - id: W92
+            reason: ReservedConcurrentExecutions is not required for this function.
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/
+      Handler: configsynchronizer.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Role: !GetAtt ConfigurationSynchronizerIamRole.Arn
+      Description: Synchronizes DRS configuration settings with configuration defined in source control.
+      Environment:
+        Variables:
+          DR_AUTOMATION_BUCKET: !Ref 'DRAutomationBucketName'
+          DR_CONFIGURATION_SYNCHRONIZER_ROLE_NAME: drs-configuration-synchronizer-account-role
+          DR_CONFIGURATION_SYNCHRONIZER_TOPIC_ARN: !Ref 'SnsTopicArn'
+      FunctionName: drs-configuration-synchronizer
+      MemorySize: 128
+      Timeout: 300
+#      Events:
+#        ConfigurationSynchronizerFunctionApi:
+#          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+#          Properties:
+#            Path: /invoke
+#            Method: get
+
+  ConfigurationSynchronizerIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: drs-configuration-synchronizer-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      Description: Used by the AWS Lambda for the DR configuration synchronizer
+
+  DRConfigurationSynchronizerLambdaRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Resource: arn:aws:iam::*:role/drs-configuration-synchronizer-account-role
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ConfigurationSynchronizerFunction}'
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ConfigurationSynchronizerFunction}:*'
+          - Action: sns:Publish
+            Effect: Allow
+            Resource: !Ref 'SnsTopicArn'
+          - Action:
+              - s3:PutObject
+              - s3:Abort*
+            Effect: Allow
+            Resource: !Sub 'arn:${AWS::Partition}:s3:::${DRAutomationBucketName}/*'
+        Version: '2012-10-17'
+      PolicyName: DRConfigurationSynchronizerLambdaRolePolicy
+      Roles:
+        - !Ref 'ConfigurationSynchronizerIamRole'
+
+  PeriodicTrigger:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Periodically event to invoke DR configuration synchronizer.
+      ScheduleExpression: rate(1 day)
+      State: DISABLED
+      Targets:
+        - Arn: !GetAtt 'ConfigurationSynchronizerFunction.Arn'
+          Id: SynchronizerTarget
+  LambdaPolicy:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref 'ConfigurationSynchronizerFunction'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt 'PeriodicTrigger.Arn'
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+#  ConfigurationSynchronizerApi:
+#    Description: "API Gateway endpoint URL for Prod stage for drs-configuration-synchronizer function"
+#    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  ConfigurationSynchronizerFunctionArn:
+    Description: ARN of the configuration synchronizer function
+    Value: !GetAtt 'ConfigurationSynchronizerFunction.Arn'
+  ConfigurationSynchronizerIamRole:
+    Description: "IAM Role created for Configuration Synchronizer function"
+    Value: !GetAtt ConfigurationSynchronizerIamRole.Arn

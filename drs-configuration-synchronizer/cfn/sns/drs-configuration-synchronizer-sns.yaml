@@ -1,0 +1,18 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+Description: SNS Topic for the notification configuration of alarms created by the DRS Configuration Synchronizer Lambda function
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  DRSConfigurationSynchronizerSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: DRS Configuration Synchronizer SNS Notification Topic
+      TopicName: DRSConfigurationSynchronizerSNSTopic
+
+Outputs:
+  DRSConfigurationSynchronizerSNSTopicArn:
+    Value: !Ref DRSConfigurationSynchronizerSNSTopic
+    Description: "SNS topic ARN for notifications for alarms created by the DRS Configuration Synchronizer lambda function"
+    Export:
+      Name: drs-configuration-synchronizer-sns-topic-arn

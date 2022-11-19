@@ -1,0 +1,259 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to create the synch_source_server_tags AWS Lambda function.  The lambda function synchronizes tags from EC2 instances running in the region with AWS Elastic Disaster Recovery service (DRS)
+
+Parameters:
+  RateString:
+    Description: The rate at which to synchronize tags, see https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions for valid values
+    Type: String
+    Default: 1 day
+  Memory:
+    Description: Memory to allocate to the AWS Lambda Function
+    Type: Number
+    Default: 128
+  DrsAssumeRoleName:
+    Description: The name of the AWS IAM role in the DRS account to assume in order to update tags on DRS source servers
+    Type: String
+    Default: synch_source_server_tags
+  DrsAccountNumber:
+    Description: The AWS account number where the DRS service is running
+    Type: String
+  DrsRegion:
+    Description: The name of the AWS region where the DRS service is running (e.g. "us-west-2")
+    Type: String
+  SourceRegions:
+    Description: A comma separated list of AWS regions containing the EC2 instances whose tags should be replicated to DRS (e.g. "us-east-1,us-west-1")
+    Type: String
+
+
+Resources:
+  lambdafunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: synch_source_server_tags
+      Description: "AWS Lambda function to synchronize AWS EC2 instance tags with AWS Elastic Disaster Recovery Service source servers"
+      Handler: index.handler
+      MemorySize: 128
+      Role: !GetAtt lambdarole.Arn
+      Runtime: python3.9
+      Timeout: 60
+      Environment:
+        Variables:
+          DRS_ASSUME_ROLE_NAME: !Ref DrsAssumeRoleName
+          DRS_ACCOUNT_NUMBER: !Ref DrsAccountNumber
+          DRS_REGION: !Ref DrsRegion
+          SOURCE_ACCOUNT: !Ref AWS::AccountId
+          SOURCE_REGIONS: !Ref SourceRegions
+      Code:
+        ZipFile: |          
+          import boto3
+          import logging
+          import json
+          from os import getenv
+          from botocore.config import Config
+          
+          logger = logging.getLogger()
+          log_level = getenv("LOGLEVEL", "INFO")
+          level = logging.getLevelName(log_level)
+          logger.setLevel(level)
+          
+          
+          def handler(event, context):
+              drs_account_number = getenv("DRS_ACCOUNT_NUMBER", None)
+              drs_account_role = getenv("DRS_ASSUME_ROLE_NAME", None)
+              drs_account_region = getenv("DRS_REGION", None)
+              source_account = getenv("SOURCE_ACCOUNT", None)
+              source_regions = getenv("SOURCE_REGIONS", None)
+              source_regions = [x.strip() for x in source_regions.split(',')]
+          
+              logger.info("Event received: {}".format(json.dumps(event)))
+          
+              replicate_source_servers_tags(drs_account_number, drs_account_role, drs_account_region, source_account,
+                                            source_regions)
+          
+          
+          def replicate_source_servers_tags(drs_account_number, drs_account_role, drs_account_region, source_account,
+                                            source_regions):
+              try:
+                  logger.debug("assuming role {} in account {}, region {}".format(drs_account_role, drs_account_number,
+                                                                                  drs_account_region))
+                  drs_account_credentials = assume_role(drs_account_number, drs_account_role, "replicate_source_servers_tags",
+                                                        drs_account_region)
+                  drs_account_client = boto3_client('drs', drs_account_region, drs_account_credentials)
+                  drs_paginator = drs_account_client.get_paginator('describe_source_servers')
+                  response_iterator = drs_paginator.paginate(
+                      filters={},
+                      maxResults=200,
+                      PaginationConfig={
+                          'MaxItems': 200,
+                          'PageSize': 200
+                      }
+                  )
+                  source_servers_metadata = []
+                  for i in response_iterator:
+                      source_servers_metadata += i.get('items')
+          
+                  logger.info('{} source servers found, gathering instance ids...'.format(len(source_servers_metadata)))
+          
+                  source_servers_tags = {}
+                  for server_metadata in source_servers_metadata:
+                      if server_metadata['dataReplicationInfo']['dataReplicationState'] != 'DISCONNECTED':
+                          source_servers_tags[server_metadata['sourceProperties']['identificationHints']['awsInstanceID']] = {
+                              'arn': server_metadata['arn'],
+                              'instance_id': server_metadata['sourceProperties']['identificationHints']['awsInstanceID'],
+                              'source_servers_tags': server_metadata['tags'],
+                              'instance_tags': dict()
+                          }
+          
+                  logger.debug("data for existing drs source servers is: {}".format(source_servers_tags))
+                  logger.info('processed {} source servers, getting tags..'.format(len(source_servers_tags)))
+                  ec2_instance_ids = list(source_servers_tags.keys())
+          
+                  for source_server_region in source_regions:
+                      logger.info("Processing region {}".format(source_server_region))
+                      source_account_ec2_client = boto3.client('ec2', source_server_region)
+          
+                      instances_paginator = source_account_ec2_client.get_paginator('describe_instances')
+          
+                      instance_pages = instances_paginator.paginate()
+          
+                      for instance_page in instance_pages:
+                          for reservation in instance_page['Reservations']:
+                              for instance in reservation['Instances']:
+                                  # determine if instance has a matching DRS source server
+                                  matched_instance = source_servers_tags.get(instance['InstanceId'], None)
+                                  if matched_instance:
+                                      logger.info("Matched instance {} to source server {}".format(matched_instance['instance_id'], matched_instance['arn']))
+                                      instance_tags = matched_instance['instance_tags']
+                                      if len(instance['Tags']) > 0:
+                                          for tag in instance['Tags']:
+                                              logger.debug("tag is {}".format(tag))
+                                              if not tag['Key'].startswith("aws:"):
+                                                  instance_tags[tag['Key']] = tag['Value']
+                                              else:
+                                                  logger.debug("skipping aws reserved tag: {} for instance {}".format(tag['Key'],
+                                                                                                                      instance[
+                                                                                                                          'InstanceId']))
+                                          # add AWS information to tags
+                                          instance_tags['source:account'] = source_account
+                                          instance_tags['source:region'] = source_server_region
+                                          response = drs_account_client.tag_resource(
+                                              resourceArn=matched_instance['arn'],
+                                              tags=instance_tags
+                                          )
+                                          logger.debug('drs_account_client.tag_resource() returned {}'.format(response))
+          
+                                      else:
+                                          logger.debug(
+                                              "Instance {} doesn't have any tags, skipping...".format(instance['InstanceId']))
+          
+              except Exception as e:
+                  # If any other exceptions which we didn't expect are raised
+                  # then fail and log the exception message.
+                  logger.error('Error replicating tags to DRS in account {} and region {}: {}'.format(
+                      drs_account_number,
+                      drs_account_region,
+                      e
+                  )
+                  )
+                  raise
+          
+          
+          def boto3_client(resource, region, assumed_credentials=None):
+              config = Config(
+                  retries=dict(
+                      max_attempts=40
+                  ),
+                  region_name=region
+              )
+              if assumed_credentials:
+                  client = boto3.client(
+                      resource,
+                      aws_access_key_id=assumed_credentials['AccessKeyId'],
+                      aws_secret_access_key=assumed_credentials['SecretAccessKey'],
+                      aws_session_token=assumed_credentials['SessionToken'],
+                      config=config
+                  )
+              else:
+                  client = boto3.client(
+                      resource,
+                      config=config
+                  )
+          
+              return client
+          
+          
+          def assume_role(account_number, role_name, session_name, region):
+              logger.debug("getting sts client in region {}")
+              sts_client = boto3_client('sts', region)
+              logger.debug("received sts client")
+              logger.info("assuming role {} in account {}".format(role_name, account_number))
+              assumed_role_object = sts_client.assume_role(
+                  RoleArn="arn:aws:iam::{}:role/{}".format(account_number, role_name),
+                  RoleSessionName=session_name
+              )
+              logger.debug("assume role returned {}".format(assumed_role_object))
+              assumed_credentials = assumed_role_object['Credentials']
+              return assumed_credentials
+
+
+  lambdarole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "synch_source_server_tags_lambda"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - "*"
+          PolicyName: lambda
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - ec2:DescribeInstances
+                Effect: Allow
+                Resource:
+                  - "*"
+          PolicyName: DescribeInstances
+
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Tag synchronization schedule, as rate expression, see https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions"
+      ScheduleExpression: !Sub "rate(${RateString})"
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Fn::GetAtt:
+              - lambdafunction
+              - "Arn"
+          Id: "TargetFunctionV1"
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref lambdafunction
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "ScheduledRule"
+          - "Arn"
