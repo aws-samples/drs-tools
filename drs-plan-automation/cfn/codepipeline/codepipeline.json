@@ -1,0 +1,1 @@
+{"Parameters": {"CodePipelineStackName": "drs-plan-automation-codepipeline"}, "Tags": {"BusinessUnit": "Engineering", "CostCenter": "00000", "Application": "DRS", "ApplicationOwner": "someone@example.com", "Environment": "Development"}}

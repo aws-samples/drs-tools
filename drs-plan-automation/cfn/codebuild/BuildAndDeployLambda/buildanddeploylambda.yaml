@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "The CodeBuild Project for building and deploying the DRS Plan Automation Lambda functions"
+Parameters:
+  Application:
+    Description: Application Name
+    Type: String
+    Default:  DRS Solution
+
+Resources:
+  CodeBuildBuildAndDeployLambda:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name:  BuildAndDeployLambda
+      Description: "Build and deploy Lambda Function for DRS Plan Automation"
+      ServiceRole: !GetAtt CodeBuildBuildAndDeployLambdaExecutionRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      EncryptionKey:
+        Fn::ImportValue: "drs-kms-key-arn"
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: public.ecr.aws/sam/build-python3.9
+        EnvironmentVariables:
+          - Name: drs_s3_bucket_name
+            Value:
+              Fn::ImportValue: "drs-s3-bucket-name"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: cfn/codebuild/BuildAndDeployLambda/buildspec-buildanddeploy.yml
+      TimeoutInMinutes: 10
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+
+  CodeBuildBuildAndDeployLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName:   "CodeBuildBuildAndDeployLambdaExecutionRole-Policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'kms:Encrypt'
+                  - 'kms:Decrypt'
+                  - 'kms:ReEncrypt*'
+                  - 'kms:GenerateDataKey*'
+                  - 'kms:DescribeKey'
+                Resource:
+                  Fn::ImportValue: "drs-kms-key-arn"
+                Effect: Allow
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+

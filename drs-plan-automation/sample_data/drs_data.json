@@ -1,0 +1,135 @@
+{
+  "AppId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "AppName": "Test Application",
+  "Description": "Test Application Description",
+  "KeyName": "Application",
+  "KeyValue": "App1",
+  "Owner": "myemail@example.com",
+  "Plans": [
+    {
+      "PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
+      "AppName": "App1",
+      "PlanName": "Default",
+      "Description": "Default plan for App1",
+      "Owner": "myemail@example.com",
+      "Waves": [
+        {
+          "Name": "Databases",
+          "Description": "Start databases",
+          "KeyName": "Role",
+          "KeyValue": "DB",
+          "MaxWaitTime": 90,
+          "PostWaveActions": [
+            {
+              "Name": "Post Wave Ops Item",
+              "Description": "Create an Ops Item after wave is complete",
+              "MaxWaitTime": 90,
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test PostWaveAction from the DRS Automation PLan solution"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Automation Plan Test PostWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "PreWaveActions": [
+            {
+              "Name": "Pre Wave Ops Item",
+              "Description": "Create an Ops Item before wave starts",
+              "MaxWaitTime": 90,
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test PreWaveAction from the DRS Automation PLan solution"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Automation Plan Test PreWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "UpdateTime": 30
+        },
+        {
+          "KeyName": "Role",
+          "KeyValue": "App",
+          "Name": "App Servers",
+          "Description": "Start App Servers",
+          "MaxWaitTime": 90,
+          "PostWaveActions": [
+            {
+              "Name": "Post Wave Ops Item",
+              "Description": "Create an Ops Item after wave is complete",
+              "MaxWaitTime": 90,
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test PostWaveAction from the DRS Automation PLan solution"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Automation Plan Test PostWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "PreWaveActions": [
+            {
+              "Name": "Pre Wave Ops Item",
+              "Description": "Create an Ops Item before wave starts",
+              "MaxWaitTime": 90,
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test PreWaveAction from the DRS Automation PLan solution"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Automation Plan Test PreWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "UpdateTime": 30
+        }
+      ]
+    }
+  ]
+}

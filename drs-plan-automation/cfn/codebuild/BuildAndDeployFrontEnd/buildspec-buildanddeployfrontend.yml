@@ -1,0 +1,7 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - cd ${CODEBUILD_SRC_DIR}/cfn/codebuild/BuildAndDeployFrontEnd
+      - python ./deploy.py

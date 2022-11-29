@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "The CodeBuild project for building and deploying the frontend react gui"
+Parameters:
+  Application:
+    Description: Application Name
+    Type: String
+    Default:  DRS Solution
+
+Resources:
+  CodeBuildBuildAndDeployFrontEnd:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name:  BuildAndDeployFrontEnd
+      Description: "Build and deploy front end react GUI for DRS Plan Automation"
+      ServiceRole: !GetAtt CodeBuildBuildAndDeployFrontEndExecutionRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      EncryptionKey:
+        Fn::ImportValue: "drs-kms-key-arn"
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: drs_s3_bucket_name
+            Value:
+              Fn::ImportValue: "drs-s3-bucket-name"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: cfn/codebuild/BuildAndDeployFrontEnd/buildspec-buildanddeployfrontend.yml
+      TimeoutInMinutes: 30
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+
+  CodeBuildBuildAndDeployFrontEndExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action: ['sts:AssumeRole']
+      Policies:
+        - PolicyName:   "BuildDeployFrontEnd-Policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'lambda:InvokeFunction'
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - 'cloudwatch:*'
+                  - 'logs:*'
+                  - 's3:*'
+                Effect: Allow
+                Resource: "*"
+              - Action:
+                  - 'kms:Encrypt'
+                  - 'kms:Decrypt'
+                  - 'kms:ReEncrypt*'
+                  - 'kms:GenerateDataKey*'
+                  - 'kms:DescribeKey'
+                Resource:
+                  Fn::ImportValue: "drs-kms-key-arn"
+                Effect: Allow
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+

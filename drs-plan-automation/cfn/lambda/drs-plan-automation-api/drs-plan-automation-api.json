@@ -1,0 +1,13 @@
+{
+  "Parameters" : {
+    "Memory" : "128",
+    "env" : "NONE"
+  },
+  "Tags" : {
+    "BusinessUnit" : "Engineering",
+    "CostCenter" : "00000",
+    "Application" : "DRS",
+    "ApplicationOwner" : "someone@example.com",
+    "Environment" : "Development"
+  }
+}

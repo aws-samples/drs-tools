@@ -1,0 +1,5 @@
+{
+  "IdentityPoolId": "aws_cognito_identity_pool_id",
+  "UserPoolId": "aws_user_pools_id",
+  "AppClientIDWeb": "aws_user_pools_web_client_id"
+}

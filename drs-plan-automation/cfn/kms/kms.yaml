@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  "KMS Key for DRS Solution Related AWS resources"
+Resources:
+  KMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS Key used by DRS solution related AWS services"
+      Enabled: true
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: "key-default-1"
+        Statement:
+          -
+            Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+  DRSKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub "alias/drs-plan-automation"
+      TargetKeyId: !Ref KMSKey
+
+Outputs:
+  KmsKeyArn:
+    Value: !GetAtt [ 'KMSKey', 'Arn' ]
+    Description: "KMS Key Arn for DRS solution related AWS resources"
+    Export:
+      Name: "drs-kms-key-arn"
+
+  KmsKeyID:
+    Value: !Ref KMSKey
+    Description: "KMS Key ID for DRS solution related AWS resources"
+    Export:
+      Name: "drs-kms-id"
+
+
+  KmsKeyAlias:
+    Value: !Ref DRSKeyAlias
+    Description: "KMS Key alias for DRS solution related AWS resources"
+    Export:
+      Name: "drs-kms-alias"

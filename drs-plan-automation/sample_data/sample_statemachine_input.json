@@ -1,0 +1,11 @@
+{
+  "IsDrill": true,
+  "TopicARN": "arn:aws:sns:us-east-1:464149232673:drs-solution-drs-automation-plan",
+  "Applications": [
+    {
+      "AppName": "App1",
+      "PlanName": "Default",
+      "OwnerEmail": "myemail@example.com"
+    }
+  ]
+}

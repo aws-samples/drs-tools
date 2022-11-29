@@ -1,0 +1,36 @@
+---
+Description: SNS Topic for DRS Solution pipeline and approval
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  DRSSolutionAutomationPlanSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: SNS Topic for DRS Solution pipeline and approval
+      TopicName: drs-plan-automation
+
+
+  DRSSolutionAutomationPlanSNSPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref DRSSolutionAutomationPlanSNSTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: SSEAndSSLPolicy
+        Statement:
+          - Sid: PublishEvents
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sns:Publish
+            Resource:
+              - !Ref DRSSolutionAutomationPlanSNSTopic
+
+Outputs:
+  AWSConfigRequiredTagsSNSTopicArn:
+    Value: !Ref DRSSolutionAutomationPlanSNSTopic
+    Description: "SNS Topic for DRS Solution pipeline and approval"
+    Export:
+      Name: drs-plan-automation-sns-topic-arn

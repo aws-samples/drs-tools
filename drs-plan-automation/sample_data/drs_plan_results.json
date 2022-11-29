@@ -1,0 +1,13 @@
+{
+  "AppNamePlanName": "App1_Default",
+  "IsDrill": true,
+  "StartDateTime": "",
+  "CompleteDateTime": "",
+  "WaveDetails": [
+    {
+    "StartDateTime": "",
+    "CompleteDateTime": "",
+    "Log": []
+    }
+  ]
+}

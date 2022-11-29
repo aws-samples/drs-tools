@@ -1,0 +1,378 @@
+---
+Description: AWS DRS Solution CI/CD Automation Pipeline
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  CodePipelineStackName:
+    Description: CodePipeline Stack Name
+    Type: String
+  Application:
+    Description: Application Name
+    Type: String
+    Default:  DRS
+
+Resources:
+  drsplanautomation:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: drs-plan-automation
+      ArtifactStore:
+        Type: S3
+        Location:
+          Fn::ImportValue: "drs-s3-bucket-name"
+        EncryptionKey:
+          Id:
+            Fn::ImportValue:  "drs-kms-id"
+          Type: 'KMS'
+      RoleArn:
+        Fn::GetAtt:
+          - CodePipelineManageStepsRole
+          - Arn
+      DisableInboundStageTransitions:
+        - StageName: UpdateDRSPipeline
+          Reason: Wait for updates to baseline solution
+      Stages:
+        - Name: SourceStageCodeCommit
+          Actions:
+            - InputArtifacts: []
+              Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: '1'
+                Provider: CodeCommit
+              Configuration:
+                RepositoryName:
+                  Fn::ImportValue: "drs-codecommit-repo-name"
+                BranchName: main
+              OutputArtifacts:
+                - Name: SourceArtifacts
+        - Name: UpdateDRSPipeline
+          Actions:
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: Update_Pipeline
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName:  !Ref CodePipelineStackName
+                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                TemplatePath: SourceArtifacts::cfn/codepipeline/codepipeline.yaml
+                TemplateConfiguration: SourceArtifacts::cfn/codepipeline/codepipeline.json
+              #                OutputFileName:
+              #                ParameterOverrides:
+              RunOrder: 1
+        - Name: DeployDRSTables
+          Actions:
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: DeployDRSTables
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: drs-plan-automation-tables
+                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                TemplatePath: SourceArtifacts::cfn/dynamodb/tables.yaml
+              #                OutputFileName:
+              #                ParameterOverrides:
+              RunOrder: 1
+        #            - InputArtifacts:
+        #                - Name: SourceArtifacts
+        #              Name: DeployDRSPlanStepFunction
+        #              ActionTypeId:
+        #                Category: Deploy
+        #                Owner: AWS
+        #                Version: '1'
+        #                Provider: CloudFormation
+        #              Configuration:
+        #                ActionMode: CREATE_UPDATE
+        #                StackName: drs-plan-automation-stepfunction
+        #                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+        #                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+        #                TemplatePath: SourceArtifacts::cfn/lambda/drs-plan-automation/drs-plan-automation.yaml
+        #                TemplateConfiguration: SourceArtifacts::cfn/lambda/drs-plan-automation/drs-plan-automation.json
+        #              #                OutputFileName:
+        #              #                ParameterOverrides:
+        #              RunOrder: 2
+        - Name: TestBuildDeployLambda
+          Actions:
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: Static_Analysis
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:  ValidateTemplates
+              RunOrder: 1
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: BuildAndDeployLambda
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:  BuildAndDeployLambda
+              RunOrder: 2
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: BuildAndDeployLambdaApi
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:  BuildAndDeployLambdaApi
+              RunOrder: 3
+        - Name: DeployDRSPlanAPI
+          Actions:
+#            - InputArtifacts:
+#                - Name: SourceArtifacts
+#              Name: DeployDRSPlanAPIFunction
+#              ActionTypeId:
+#                Category: Deploy
+#                Owner: AWS
+#                Version: '1'
+#                Provider: CloudFormation
+#              Configuration:
+#                ActionMode: CREATE_UPDATE
+#                StackName: drs-plan-automation-gui-function
+#                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+#                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+#                TemplatePath: SourceArtifacts::cfn/lambda/drs-plan-automation-api/drs-plan-automation-api.yaml
+#                TemplateConfiguration: SourceArtifacts::cfn/lambda/drs-plan-automation-api/drs-plan-automation-api.json
+#              #                OutputFileName:
+#              #                ParameterOverrides:
+#              RunOrder: 3
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: DeployDRSPlanAPI
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: drs-plan-automation-gui-api
+                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                TemplatePath: SourceArtifacts::cfn/apigateway/drs-plan-automation-api.yaml
+                TemplateConfiguration: SourceArtifacts::cfn/apigateway/drs-plan-automation-api.json
+                OutputFileName: apigateway.json
+              OutputArtifacts:
+                - Name: DeployDRSPlanAPI
+              RunOrder: 4
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: DeployDRSPlanAuth
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: drs-plan-automation-gui-auth
+                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                TemplatePath: SourceArtifacts::cfn/cognito/gui-auth.yaml
+                TemplateConfiguration: SourceArtifacts::cfn/cognito/gui-auth.json
+                OutputFileName: cognito.json
+              OutputArtifacts:
+                - Name: DeployDRSPlanAuth
+              #                ParameterOverrides:
+              RunOrder: 5
+        - Name: DRSFrontEnd
+          Actions:
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: DeployDRSPlanDistributionWAF
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: drs-plan-automation-gui-distribution-waf
+                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                TemplatePath: SourceArtifacts::cfn/waf/cf-waf.yaml
+                TemplateConfiguration: SourceArtifacts::cfn/waf/cf-waf.json
+# WAF CloudFront requires us-east-1 creation
+#              Region:  us-east-1
+              RunOrder: 1
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: DeployDRSPlanDistribution
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: drs-plan-automation-gui-distribution
+                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                OutputFileName: distribution.json
+                TemplatePath: SourceArtifacts::cfn/cloudfront/gui-distribution.yaml
+              #                TemplateConfiguration: SourceArtifacts::cfn/cloudfront/s3_distribution.json
+              #                OutputFileName:
+              #                ParameterOverrides:
+              OutputArtifacts:
+                - Name: DeployDRSPlanDistribution
+              RunOrder: 2
+            - InputArtifacts:
+                - Name: SourceArtifacts
+                - Name: DeployDRSPlanAuth
+                - Name: DeployDRSPlanDistribution
+                - Name: DeployDRSPlanAPI
+              Name: BuildAndDeployFrontEnd
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:  BuildAndDeployFrontEnd
+                PrimarySource: SourceArtifacts
+              RunOrder: 3
+  CodePipelineManageStepsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: CodePipeline role for moving objects through the build and deploy stages.
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codepipeline.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelineManageS3Artifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource:
+                  Fn::ImportValue: "drs-codecommit-arn"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - Fn::ImportValue: "drs-s3-bucket-arn"
+                  - Fn::Sub:
+                      - "${bucketarn}/*"
+                      - bucketarn:
+                          Fn::ImportValue: "drs-s3-bucket-arn"
+        - PolicyName: codepipeline-codecommit
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:StartBuild
+                  - codebuild:StopBuild
+                  - codebuild:BatchGetProjects
+                  - codebuild:BatchGetBuilds
+                  - codebuild:ListBuildsForProject
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/ValidateTemplates"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployLambda"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployLambdaApi"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployFrontEnd"
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - codebuild:ListBuilds
+                  - codebuild:ListProjects
+                  - codebuild:ListCuratedEnvironmentImages
+                  - codebuild:ListSourceCredentials
+                Resource: "*"
+              - Action:
+                  - 'kms:Encrypt'
+                  - 'kms:Decrypt'
+                  - 'kms:ReEncrypt*'
+                  - 'kms:GenerateDataKey*'
+                  - 'kms:DescribeKey'
+                Resource:
+                  Fn::ImportValue: "drs-kms-key-arn"
+                Effect: Allow
+      Tags:
+        - Key: Application
+          Value: !Ref Application
+
+
+  EventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "EventRule"
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - CodePipeline Pipeline Execution State Change
+        detail:
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Fn::ImportValue: drs-plan-automation-sns-topic-arn
+          Id: "NotifyFailedPipeline"
+          InputTransformer:
+            InputTemplate: !Sub |
+              "The Pipeline <pipeline> has failed. Go to https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${drsplanautomation}/view?region=${AWS::Region} for details."
+            InputPathsMap:
+              "pipeline" : "$.detail.pipeline"
+

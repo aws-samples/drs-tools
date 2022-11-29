@@ -1,0 +1,65 @@
+---
+Description: S3 Bucket for DRS Automation Related Artifacts
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  DRSAutomationBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName:  !Sub "drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: "alias/drs-plan-automation"
+      VersioningConfiguration:
+        Status: Enabled
+
+  DRSAutomationBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref DRSAutomationBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: SSEAndSSLPolicy
+        Statement:
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !Join
+                - ''
+                - - Fn::GetAtt: [DRSAutomationBucket, Arn]
+                  - '/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+          - Sid: DenyS3PublicObjectACL
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObjectAcl
+            Resource:
+              - !Join
+                - ''
+                - - Fn::GetAtt: [DRSAutomationBucket, Arn]
+                  - '/*'
+            Condition:
+              StringEqualsIgnoreCaseIfExists:
+                s3:x-amz-acl:
+                  - public-read
+                  - public-read-write
+                  - authenticated-read
+
+Outputs:
+  DRSAutomationS3BucketName:
+    Value: !Ref DRSAutomationBucket
+    Description: "S3 Bucket Name for drs-plan-automation"
+    Export:
+      Name: "drs-s3-bucket-name"
+
+
+  DRSAutomationS3BucketArn:
+    Value: !GetAtt DRSAutomationBucket.Arn
+    Description: "S3 Bucket Arn for drs-plan-automation"
+    Export:
+      Name: "drs-s3-bucket-arn"
