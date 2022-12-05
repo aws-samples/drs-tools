@@ -140,6 +140,7 @@ Resources:
                                           instance_tags['source:account'] = source_account
                                           instance_tags['source:region'] = source_server_region
                                           instance_tags['source:instance-id'] = instance['InstanceId']
+                                          instance_tags['source:instance-type'] = instance['InstanceType']
                                           response = drs_account_client.tag_resource(
                                               resourceArn=matched_instance['arn'],
                                               tags=instance_tags

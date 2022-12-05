@@ -12,6 +12,7 @@ The solution also adds the following tags to each updated DRS source server:
 * **source:account**:  The AWS Account ID where the EC2 instance is running.
 * **source:region**:  The AWS region where the EC2 instance is running.
 * **source:instance-id**:  The AWS instance id for the origin EC2 instance.
+* **source:instance-type**:  The AWS instance type for the origin EC2 instance.
 
 # Architecture
 You can synch the source server tags from EC2 instances running in the same account or from different accounts / regions than your AWS DRS account.
