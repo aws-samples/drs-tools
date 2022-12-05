@@ -11,9 +11,9 @@ When you perform a failover for your EC2 instances, you also want to preserve th
 The solution also adds the following tags to each updated DRS source server:
 * **source:account**:  The AWS Account ID where the EC2 instance is running.
 * **source:region**:  The AWS region where the EC2 instance is running.
+* **source:instance-id**:  The AWS instance id for the origin EC2 instance.
 
 # Architecture
-
 You can synch the source server tags from EC2 instances running in the same account or from different accounts / regions than your AWS DRS account.
 
 ## Single account, multiple regions
@@ -49,6 +49,7 @@ Deploy the provided [synch_source-server_tags](synch_source_server_tags_role.yam
 aws cloudformation create-stack --stack-name drs-synch-source-server-tags-role \
 --template-body file://synch_source_server_tags_role.yaml \
 --parameters ParameterKey=SourceAccountNumber,ParameterValue="<AWS Account ID where the DRS service is configured, dont specify OrganizationID if you use this >" \
+--capabilities CAPABILITY_NAMED_IAM \
 --region <enter the region where the stack should be deployed, e.g. "us-east-1">
 ```
 
@@ -61,6 +62,7 @@ aws cloudformation create-stack --stack-name drs-synch-source-server-tags \
 --parameters ParameterKey=DrsAccountNumber,ParameterValue="<AWS Account ID where DRS is configured>" \
 ParameterKey=DrsRegion,ParameterValue="<AWS Region where the DRS service is configured, eg: us-west-2>" \
 ParameterKey=SourceRegions,ParameterValue="<Comma separated list of the AWS regions in this AWS account containing EC2 instances whose tags you want to synchronize, eg: us-east-1, us-east-2>" \
+--capabilities CAPABILITY_NAMED_IAM \
 --region <enter the region where the stack should be deployed, e.g. "us-east-1">
 ```
 
@@ -75,6 +77,7 @@ Deploy the provided [synch_source-server_tags](synch_source_server_tags_role.yam
 aws cloudformation create-stack --stack-name drs-synch-source-server-tags-role \
 --template-body file://synch_source_server_tags_role.yaml \
 --parameters ParameterKey=OrganizationID,ParameterValue="<AWS organization ID for the AWS account where the DRS service is configured, dont specify SourceAccountNumber if you use this >" \
+--capabilities CAPABILITY_NAMED_IAM \
 --region <enter the region where the stack should be deployed, e.g. "us-east-1">
 ```
 
@@ -86,5 +89,6 @@ aws cloudformation create-stack --stack-name drs-synch-source-server-tags \
 --parameters ParameterKey=DrsAccountNumber,ParameterValue="<AWS Account ID where DRS is configured>" \
 ParameterKey=DrsRegion,ParameterValue="<AWS Region where the DRS service is configured, eg: us-west-2>" \
 ParameterKey=SourceRegions,ParameterValue="<Comma separated list of the AWS regions in this AWS account containing EC2 instances whose tags you want to synchronize, eg: us-east-1, us-east-2>" \
+--capabilities CAPABILITY_NAMED_IAM \
 --region <enter the region where the stack should be deployed, e.g. "us-east-1">
 ```
