@@ -17,7 +17,7 @@ Resources:
   DRSPlanAutomationExecutionTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: drs-plan-automation-results
+      TableName: drs-plan-automation-executions
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "ExecutionId"
@@ -33,6 +33,7 @@ Resources:
   DRSPlanAutomationPlanResultsTable:
     Type: AWS::DynamoDB::Table
     Properties:
+      TableName: drs-plan-automation-results
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "AppId_PlanId"
@@ -44,7 +45,6 @@ Resources:
           KeyType: "HASH"
         - AttributeName: "ExecutionId"
           KeyType: "RANGE"
-
 
 
 Outputs:
