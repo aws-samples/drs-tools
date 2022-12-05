@@ -218,13 +218,22 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Action:
+                  - sts:AssumeRole
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:aws:iam::${DrsAccountNumber}:role/${DrsAssumeRoleName}"
+          PolicyName: LambdaLogging
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Effect: Allow
                 Resource:
                   - "*"
-          PolicyName: lambda
+          PolicyName: DrsSynchSourceServerTagsLambdaLogging
         - PolicyDocument:
             Version: 2012-10-17
             Statement:
