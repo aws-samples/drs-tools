@@ -143,13 +143,13 @@ Outputs:
     Value: !Ref LambdaFunction
     Description: "DRS Solution - API Lambda Function Name"
     Export:
-      Name: "drs-plan-automation-api-name"
+      Name: "drs-plan-automation-lambda-api-name"
 
   LambdaFunctionArn:
     Value: !GetAtt LambdaFunction.Arn
     Description: "DRS Solution - API Lambda Function Arn"
     Export:
-      Name: "drs-plan-automation-api-arn"
+      Name: "drs-plan-automation-lambda-api-arn"
 
   Name:
     Value:

@@ -271,7 +271,7 @@ Resources:
                     - ":"
                     - Ref: AWS::AccountId
                     - ":"
-                    - Fn::ImportValue: "drs-plan-automation-gui-api-id"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
                     - "/"
                     - Fn::If:
                         - ShouldNotCreateEnvResources
@@ -285,7 +285,7 @@ Resources:
                     - ":"
                     - Ref: AWS::AccountId
                     - ":"
-                    - Fn::ImportValue: "drs-plan-automation-gui-api-id"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
                     - "/"
                     - Fn::If:
                         - ShouldNotCreateEnvResources
@@ -299,7 +299,7 @@ Resources:
                     - ":"
                     - Ref: AWS::AccountId
                     - ":"
-                    - Fn::ImportValue: "drs-plan-automation-gui-api-id"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
                     - "/"
                     - Fn::If:
                         - ShouldNotCreateEnvResources
@@ -313,7 +313,7 @@ Resources:
                     - ":"
                     - Ref: AWS::AccountId
                     - ":"
-                    - Fn::ImportValue: "drs-plan-automation-gui-api-id"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
                     - "/"
                     - Fn::If:
                         - ShouldNotCreateEnvResources
@@ -327,7 +327,7 @@ Resources:
                     - ":"
                     - Ref: AWS::AccountId
                     - ":"
-                    - Fn::ImportValue: "drs-plan-automation-gui-api-id"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
                     - "/"
                     - Fn::If:
                         - ShouldNotCreateEnvResources
@@ -341,7 +341,7 @@ Resources:
                     - ":"
                     - Ref: AWS::AccountId
                     - ":"
-                    - Fn::ImportValue: "drs-plan-automation-gui-api-id"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
                     - "/"
                     - Fn::If:
                         - ShouldNotCreateEnvResources

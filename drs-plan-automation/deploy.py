@@ -59,12 +59,11 @@ if hard_stop:
 
 solution_prefix = "drs-plan-automation"
 
-
 @click.command()
-@click.option("--prefix", required=False, default=None)
-@click.option("--environment", required=False, default=None)
-@click.option('--prompt/--no-prompt', default=False)
-@click.option('--cleanup/--no-cleanup', required=False, default=False)
+@click.option("--prefix", required=False, default=None, help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
+@click.option("--environment", required=False, default=None, help="The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'")
+@click.option('--cleanup', required=False, is_flag=True, help="Cleanup the deployed stacks and AWS resources.  If you deployed with the --prefix or --environment option, then you must cleanup with the same option parameters")
+@click.option('--prompt', required=False, is_flag=True, help="Whether to prompt and require you to press enter after each stack is deployed.")
 def deploy(prefix, environment, prompt, cleanup):
     try:
         account_number, user_id = helper.get_credential_info(creds, region)
@@ -119,10 +118,10 @@ def deploy(prefix, environment, prompt, cleanup):
     planautomation_codepipeline_stack_name = helper.get_name(solution_prefix, "codepipeline")
     planautomation_codepipeline_stack_template = "codepipeline/codepipeline.yaml"
 
-    planautomation_waf_stack_name = helper.get_name(solution_prefix, "gui-distribution-waf")
-    planautomation_distribution_stack_name = helper.get_name(solution_prefix, "gui-distribution")
-    planautomation_api_stack_name = helper.get_name(solution_prefix, "gui-api")
-    planautomation_auth_stack_name = helper.get_name(solution_prefix, "gui-auth")
+    planautomation_waf_stack_name = helper.get_name(solution_prefix, "distribution-waf")
+    planautomation_distribution_stack_name = helper.get_name(solution_prefix, "distribution")
+    planautomation_api_stack_name = helper.get_name(solution_prefix, "api")
+    planautomation_auth_stack_name = helper.get_name(solution_prefix, "auth")
     planautomation_drsplangui_function_stack_name = helper.get_name(solution_prefix, "lambda-api")
     planautomation_stepfunction_stack_name = helper.get_name(solution_prefix, "lambda")
     planautomation_tables_stack_name = helper.get_name(solution_prefix, "tables")
