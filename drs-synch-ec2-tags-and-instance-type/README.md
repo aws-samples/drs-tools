@@ -12,12 +12,11 @@ The solution also adds the following tags to each updated DRS source server:
 
 Tagging your source servers with the same tags as your EC2 instances enables you to organize your DRS source servers by important attributes such as which application / workload that they correspond to.  Tags can help you to coordinate the sequence of server recovery as well as what automation needs to be applied before or after the source servers are recovered.
 
+When you perform a failover for your EC2 instances, you also want to preserve their EC2 tags and apply those same tags to newly provisioned failover instances.  Applying the same tags can also help you with cost reconciliation and tracking that you may be performing using Cost Allocation Tags.
+
 The solution also updates the DRS source servers launch configuration EC2 instance type to correspond to the same type as the original EC2 instance.  After updating the launch template, it disables right sizing so that the exact same instance type will be used for future drills / recoveries.
 
 Using the same EC2 instance type as the original EC2 instance in drills and recoveries reduces the chance of underprovisioning / overprovisioning in your DR environment.  This improves the likelihood of your recovery instances performing similar to the original instances.
-
-When you perform a failover for your EC2 instances, you also want to preserve their EC2 tags and apply those same tags to newly provisioned failover instances.  Applying the same tags can also help you with cost reconciliation and tracking that you may be performing using Cost Allocation Tags.
-
 
 # Architecture
 You can use the solution in a single account architecture or a multi-account architecture.  
