@@ -24,7 +24,7 @@ Resources:
     Type: AWS::IAM::Role
     Condition: CreateAccountRole
     Properties:
-      RoleName:  "synch_source_server_tags"
+      RoleName:  "drs_synch_ec2_tags_and_instance_type"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -44,6 +44,19 @@ Resources:
                 Action:
                   - drs:TagResource
                   - drs:DescribeSourceServers
+                  - drs:UpdateLaunchConfiguration
+                Resource: "*"
+        - PolicyName:   "UpdateInstanceType"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: UpdateDRSInstance
+                Effect: Allow
+                Action:
+                  - drs:GetLaunchConfiguration
+                  - ec2:DescribeLaunchTemplateVersions
+                  - ec2:CreateLaunchTemplateVersion
+                  - ec2:ModifyLaunchTemplate
                 Resource: "*"
 
 
@@ -51,7 +64,7 @@ Resources:
     Type: AWS::IAM::Role
     Condition: CreateOrgRole
     Properties:
-      RoleName:  "synch_source_server_tags"
+      RoleName:  "drs_synch_ec2_tags_and_instance_type"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -75,5 +88,17 @@ Resources:
                 Action:
                   - drs:TagResource
                   - drs:DescribeSourceServers
+                  - drs:UpdateLaunchConfiguration
                 Resource: "*"
-
+        - PolicyName:   "UpdateInstanceType"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: UpdateDRSInstance
+                Effect: Allow
+                Action:
+                  - drs:GetLaunchConfiguration
+                  - ec2:DescribeLaunchTemplateVersions
+                  - ec2:CreateLaunchTemplateVersion
+                  - ec2:ModifyLaunchTemplate
+                Resource: "*"
