@@ -71,7 +71,7 @@ Resources:
     Properties:
       DistributionConfig:
         WebACLId:
-          !If [CreateWAF, !Ref AllowedCIDRs, !Ref "AWS::NoValue"]
+          !If [CreateWAF, !Ref drswaf, !Ref "AWS::NoValue"]
         Origins:
           - DomainName: !GetAtt s3bucket.RegionalDomainName
             Id: myS3Origin
@@ -137,10 +137,10 @@ Resources:
       Rules:
         !If
         - CreateWAF
-        - Action:
-            Type: ALLOW
-          RuleId: !Ref drsallowedipsrule
-          Priority: 0
+        - - Action:
+              Type: ALLOW
+            RuleId: !Ref drsallowedipsrule
+            Priority: 0
         - !Ref AWS::NoValue
       MetricName: webacl
 
