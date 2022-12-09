@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DRS Plan Automation DynamoDB Tables
+
+Resources:
+  DRSPlanAutomationApplicationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:  drs-plan-automation-applications
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "AppId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "AppId"
+          KeyType: "HASH"
+
+  DRSPlanAutomationExecutionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: drs-plan-automation-executions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "ExecutionId"
+          AttributeType: "S"
+        - AttributeName: "StartDate"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "ExecutionId"
+          KeyType: "HASH"
+        - AttributeName: "StartDate"
+          KeyType: "RANGE"
+
+  DRSPlanAutomationPlanResultsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: drs-plan-automation-results
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "AppId_PlanId"
+          AttributeType: "S"
+        - AttributeName: "ExecutionId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "AppId_PlanId"
+          KeyType: "HASH"
+        - AttributeName: "ExecutionId"
+          KeyType: "RANGE"
+
+
+Outputs:
+  DRSPlanAutomationApplicationsTableName:
+    Value: !Ref DRSPlanAutomationApplicationsTable
+    Description: "DRS Applications Table Name"
+    Export:
+      Name: "drs-plan-automation-applications-table-name"
+
+  DRSPlanAutomationApplicationsTableArn:
+    Value: !GetAtt DRSPlanAutomationApplicationsTable.Arn
+    Description: "DRS Applications Table Arn"
+    Export:
+      Name: "drs-plan-automation-applications-table-arn"
+
+
+  DRSPlanAutomationPlanResultsTableName:
+    Value: !Ref DRSPlanAutomationPlanResultsTable
+    Description: "DRS Plan Automation Results Table Name"
+    Export:
+      Name: "drs-plan-automation-plan-results-table-name"
+
+  DRSPlanAutomationPlanResultsTableArn:
+    Value: !GetAtt DRSPlanAutomationPlanResultsTable.Arn
+    Description: "DRS Plan Automation Results Table Arn"
+    Export:
+      Name: "drs-plan-automation-plan-results-table-arn"
+
+  DRSPlanAutomationPlanExecutionTableName:
+    Value: !Ref DRSPlanAutomationExecutionTable
+    Description: "DRS Plan Automation Execution Table Name"
+    Export:
+      Name: "drs-plan-automation-plan-execution-table-name"
+
+  DRSPlanAutomationPlanExecutionTableArn:
+    Value: !GetAtt DRSPlanAutomationExecutionTable.Arn
+    Description: "DRS Plan Automation Execution Table Arn"
+    Export:
+      Name: "drs-plan-automation-plan-execution-table-arn"
+

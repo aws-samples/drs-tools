@@ -1,0 +1,270 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Step function to automate DRS recovery plan
+
+Globals:
+  Function:
+#    Timeout: 3
+    Tracing: Active
+#  Api:
+#    TracingEnabled: True
+
+Parameters:
+  Memory:
+    Description: Memory to allocate to Lambda function
+    Type: Number
+    Default: 128
+
+
+Resources:
+  DRSPlanAutomationFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: "drs-plan-automation-step-function"
+      CodeUri: src/
+      Handler: drs_automation_plan.handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Role: !GetAtt DRSPlanAutomationLambdaRole.Arn
+      MemorySize: !Ref Memory
+      Timeout: 600
+      Environment:
+        Variables:
+          DRS_APPLICATION_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-applications-table-name"
+          DRS_RESULTS_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-plan-results-table-name"
+          DRS_EXECUTION_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-plan-execution-table-name"
+
+  DRSPlanAutomationStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt DRSPlanAutomationLambdaRole.Arn
+      Definition:
+        Comment: Automate the restoration of DRS source servers based on provided order and
+          wait times.
+        StartAt: StartDRSPlan
+        States:
+          StartDRSPlan:
+            ItemsPath: "$.Applications"
+            Iterator:
+              StartAt: InitiateWavePlan
+              States:
+                ApplicationCompleted:
+                  OutputPath: "$.Payload"
+                  Parameters:
+                    FunctionName: !GetAtt DRSPlanAutomationFunction.Arn
+                    Payload.$: "$"
+                  Resource: arn:aws:states:::lambda:invoke
+                  Retry:
+                    - BackoffRate: 2
+                      ErrorEquals:
+                        - Lambda.ServiceException
+                        - Lambda.AWSLambdaException
+                        - Lambda.SdkClientException
+                      IntervalSeconds: 2
+                      MaxAttempts: 6
+                  Type: Task
+                  Next: ApplicationSucceeded
+                ApplicationSucceeded:
+                  Type: Succeed
+                DetermineActionsState:
+                  Choices:
+                    - And:
+                        - Variable: "$.result.status"
+                          IsPresent: true
+                        - Variable: "$.result.status"
+                          StringEquals: failed
+                      Next: ApplicationFailed
+                    - And:
+                        - Variable: "$.result.status"
+                          IsPresent: true
+                        - Variable: "$.result.status"
+                          StringEquals: timeout
+                      Next: ApplicationTimeout
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.all_actions_completed"
+                        - BooleanEquals: true
+                          Variable: "$.application.all_actions_completed"
+                      Next: DetermineWavePlanState
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.action_completed"
+                        - BooleanEquals: false
+                          Variable: "$.application.action_completed"
+                      Next: WaitForActionUpdate
+                  Type: Choice
+                DetermineWavePlanState:
+                  Choices:
+                    - And:
+                        - Variable: "$.result.status"
+                          IsPresent: true
+                        - Variable: "$.result.status"
+                          StringEquals: failed
+                      Next: ApplicationFailed
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.all_actions_completed"
+                        - BooleanEquals: false
+                          Variable: "$.application.all_actions_completed"
+                      Next: DetermineActionsState
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.all_waves_completed"
+                        - BooleanEquals: false
+                          Variable: "$.application.all_waves_completed"
+                      Next: DetermineWaveState
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.all_waves_completed"
+                        - BooleanEquals: true
+                          Variable: "$.application.all_waves_completed"
+                      Next: ApplicationCompleted
+                  Type: Choice
+                DetermineWaveState:
+                  Choices:
+                    - And:
+                        - Variable: "$.result.status"
+                          IsPresent: true
+                        - Variable: "$.result.status"
+                          StringEquals: failed
+                      Next: ApplicationFailed
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.all_waves_completed"
+                        - BooleanEquals: true
+                          Variable: "$.application.all_waves_completed"
+                      Next: ApplicationCompleted
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.wave_completed"
+                        - BooleanEquals: false
+                          Variable: "$.application.wave_completed"
+                      Next: WaitForWaveUpdate
+                    - And:
+                        - IsPresent: true
+                          Variable: "$.application.wave_completed"
+                        - BooleanEquals: true
+                          Variable: "$.application.wave_completed"
+                      Next: DetermineWavePlanState
+                  Type: Choice
+                InitiateWavePlan:
+                  Next: DetermineWavePlanState
+                  OutputPath: "$.Payload"
+                  Parameters:
+                    FunctionName:   !GetAtt DRSPlanAutomationFunction.Arn
+                    Payload.$: "$"
+                  Resource: arn:aws:states:::lambda:invoke
+                  Retry:
+                    - BackoffRate: 2
+                      ErrorEquals:
+                        - Lambda.ServiceException
+                        - Lambda.AWSLambdaException
+                        - Lambda.SdkClientException
+                      IntervalSeconds: 2
+                      MaxAttempts: 6
+                  Type: Task
+                UpdateActionStatus:
+                  Next: DetermineActionsState
+                  OutputPath: "$.Payload"
+                  Parameters:
+                    FunctionName:  !GetAtt DRSPlanAutomationFunction.Arn
+                    Payload.$: "$"
+                  Resource: arn:aws:states:::lambda:invoke
+                  Retry:
+                    - BackoffRate: 2
+                      ErrorEquals:
+                        - Lambda.ServiceException
+                        - Lambda.AWSLambdaException
+                        - Lambda.SdkClientException
+                      IntervalSeconds: 2
+                      MaxAttempts: 6
+                  Type: Task
+                UpdateWaveStatus:
+                  Next: DetermineWaveState
+                  OutputPath: "$.Payload"
+                  Parameters:
+                    FunctionName: !GetAtt DRSPlanAutomationFunction.Arn
+                    Payload.$: "$"
+                  Resource: arn:aws:states:::lambda:invoke
+                  Retry:
+                    - BackoffRate: 2
+                      ErrorEquals:
+                        - Lambda.ServiceException
+                        - Lambda.AWSLambdaException
+                        - Lambda.SdkClientException
+                      IntervalSeconds: 2
+                      MaxAttempts: 6
+                  Type: Task
+                WaitForActionUpdate:
+                  Next: UpdateActionStatus
+                  SecondsPath: "$.application.current_action_update_time"
+                  Type: Wait
+                WaitForWaveUpdate:
+                  Next: UpdateWaveStatus
+                  SecondsPath: "$.application.current_wave_update_time"
+                  Type: Wait
+                ApplicationFailed:
+                  Type: Fail
+                ApplicationTimeout:
+                  Type: Fail
+            Parameters:
+              action: begin
+              execution.$: "$$.Execution.Id"
+              execution_details.$: "$$.Map.Item.Value"
+              isdrill.$: "$.IsDrill"
+              topic_arn.$: "$.TopicARN"
+              user.$: "$.user"
+            ResultPath: "$.application_results"
+            Type: Map
+            End: true
+
+
+
+  DRSPlanAutomationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - states.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticDisasterRecoveryConsoleFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+      Policies:
+        - PolicyName:  DRSSolutionRecoveryPlanPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ssm:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+
+
+Outputs:
+  DRSPlanAutomationStateMachineArn:
+    Value: !Ref DRSPlanAutomationStateMachine
+    Description: "DRS Plan Automation State Machine Arn"
+    Export:
+      Name: "drs-plan-automation-state-machine-arn"

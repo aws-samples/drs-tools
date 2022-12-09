@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  RecoveryManualAction:
+    Type: AWS::SSM::Document
+    Properties:
+      Name: RecoveryManualAction
+      DocumentFormat: YAML
+      DocumentType: Automation
+      Content:
+        schemaVersion: '0.3'
+        description: Allows humans to take manual actions during disaster-recovery workflows.
+        parameters:
+          Message:
+            type: String
+          NotificationTopicArn:
+            type: String
+          ApproversArns:
+            type: StringList
+        mainSteps:
+          - name: ManualApproval
+            action: aws:approve
+            onFailure: Abort
+            onCancel: Abort
+            inputs:
+              NotificationArn: "{{NotificationTopicArn}}"
+              Message: "{{Message}}"
+              MinRequiredApprovals: 1
+              Approvers: '{{ ApproversArns }}'
+            isEnd: true

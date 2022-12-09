@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "The CodeCommit repo for DRS Plan Automation Infrastructure As Code"
+Parameters:
+  S3Key:
+    Description: S3 key for zip file of initial source
+    Type: String
+    Default:  drs-solution.zip
+
+Resources:
+  CodeCommitRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      Code:
+        S3:
+          Bucket:
+            Fn::ImportValue: "drs-s3-bucket-name"
+          Key: !Ref S3Key
+      RepositoryDescription: "The CodeCommit repo for DRS Plan Automation Infrastructure As Code"
+      RepositoryName: drs-plan-automation
+
+
+Outputs:
+  CodeCommitRepoARN:
+    Value: !GetAtt CodeCommitRepo.Arn
+    Description: "CodeCommit ARN for DRS Plan Automation"
+    Export:
+      Name: "drs-codecommit-arn"
+
+  CodeCommitRepoName:
+    Value: !GetAtt CodeCommitRepo.Name
+    Description: "CodeCommit Repo Name for DRS Plan Automation"
+    Export:
+      Name: "drs-codecommit-repo-name"
+
+
+  CodeCommitCloneUrlHttp:
+    Value: !GetAtt CodeCommitRepo.CloneUrlHttp
+    Description: "CodeCommit Clone URL HTTP for DRS Plan Automation"
+    Export:
+      Name: !Sub "drs-codecommit-http-clone-url"

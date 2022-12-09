@@ -1,0 +1,328 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deploys a sample DRS source environment with VPC and subnets and EC2 instances configured and installed with DRS agent
+Parameters:
+  TargetDRSRegion:
+    Description: The target AWS region where the DRS service is configured and where EC2 instances should target replication.
+    Type: String
+    Default: us-west-2
+  WebServerCount:
+    Description: The number of sample EC2 instances tagged as web servers to launch
+    Type: Number
+    Default: 1
+  AppServerCount:
+    Description: The number of sample EC2 instances tagged as app servers to launch
+    Type: Number
+    Default: 1
+  DBServerCount:
+    Description: The number of sample EC2 instances tagged as DB servers to launch
+    Type: Number
+    Default: 1
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: drs-plan-automation-demo-source
+        - Key: Purpose
+          Value: drs-plan-automation-demo-source
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: drs-plan-automation-demo-source
+        - Key: Purpose
+          Value: drs-plan-automation-demo-source
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: 10.0.0.0/24
+      #      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: drs-plan-automation-demo-source
+        - Key: Purpose
+          Value: drs-plan-automation-demo-source
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: drs-plan-automation-demo-source
+        - Key: Purpose
+          Value: drs-plan-automation-demo-source
+
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    DependsOn:
+      - PublicRouteTable
+      - PublicSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+
+  DRSServersLaunchTemplateDB:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: drs-plan-automation-demo-source-db
+      LaunchTemplateData:
+        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: '8'
+              VolumeType: gp2
+              Encrypted: true
+        InstanceType: t3.micro
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            SubnetId: !Ref PublicSubnet1
+            DeviceIndex: "0"
+            Groups:
+              - !Ref InstanceSG
+        UserData:
+          Fn::Base64: !Sub |
+            #!/usr/bin/env bash
+            yum install -y amazon-cloudwatch-agent
+            wget -O ./aws-replication-installer-init.py https://aws-elastic-disaster-recovery-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/latest/linux/aws-replication-installer-init.py
+            sudo python3 aws-replication-installer-init.py --region ${TargetDRSRegion} --no-prompt
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: sample-dbserver-instance
+              - Key: Application
+                Value: sample
+              - Key: Role
+                Value: DBServer
+              - Key: Purpose
+                Value: drs-plan-automation-demo-source
+
+
+  DRSServersLaunchTemplateWebServer:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: drs-plan-automation-demo-source-web
+      LaunchTemplateData:
+        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: '8'
+              VolumeType: gp2
+              Encrypted: true
+        InstanceType: t3.micro
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            SubnetId: !Ref PublicSubnet1
+            DeviceIndex: "0"
+            Groups:
+              - !Ref InstanceSG
+        UserData:
+          Fn::Base64: !Sub |
+            #!/usr/bin/env bash
+            yum install -y amazon-cloudwatch-agent
+            wget -O ./aws-replication-installer-init.py https://aws-elastic-disaster-recovery-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/latest/linux/aws-replication-installer-init.py
+            sudo python3 aws-replication-installer-init.py --region ${TargetDRSRegion} --no-prompt
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: sample-webserver-instance
+              - Key: Application
+                Value: sample
+              - Key: Role
+                Value: WebServer
+              - Key: Purpose
+                Value: drs-plan-automation-demo-source
+
+
+  DRSServersLaunchTemplateAppServer:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: drs-plan-automation-demo-source-app
+      LaunchTemplateData:
+        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: '8'
+              VolumeType: gp2
+              Encrypted: true
+        InstanceType: t3.micro
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            SubnetId: !Ref PublicSubnet1
+            DeviceIndex: "0"
+            Groups:
+              - !Ref InstanceSG
+        UserData:
+          Fn::Base64: !Sub |
+            #!/usr/bin/env bash
+            yum install -y amazon-cloudwatch-agent
+            wget -O ./aws-replication-installer-init.py https://aws-elastic-disaster-recovery-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/latest/linux/aws-replication-installer-init.py
+            sudo python3 aws-replication-installer-init.py --region ${TargetDRSRegion} --no-prompt
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: sample-appserver-instance
+              - Key: Application
+                Value: sample
+              - Key: Role
+                Value: AppServer
+              - Key: Purpose
+                Value: drs-plan-automation-demo-source
+
+
+  DRSSampleServersFleetDB:
+    Type: AWS::EC2::EC2Fleet
+    Properties:
+      LaunchTemplateConfigs:
+        - LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref DRSServersLaunchTemplateDB
+            Version: !GetAtt DRSServersLaunchTemplateDB.LatestVersionNumber
+      Type: instant
+      TargetCapacitySpecification:
+        DefaultTargetCapacityType: on-demand
+        OnDemandTargetCapacity: !Ref DBServerCount
+        TotalTargetCapacity: !Ref DBServerCount
+      TagSpecifications:
+        - ResourceType: fleet
+          Tags:
+            - Key: Name
+              Value: sample-db-instance
+            - Key: Application
+              Value: sample
+            - Key: Role
+              Value: DBServer
+            - Key: Purpose
+              Value: drs-plan-automation-demo-source
+
+
+  DRSSampleServersFleetAppServers:
+    Type: AWS::EC2::EC2Fleet
+    Properties:
+      LaunchTemplateConfigs:
+        - LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref DRSServersLaunchTemplateAppServer
+            Version: !GetAtt DRSServersLaunchTemplateAppServer.LatestVersionNumber
+      Type: instant
+      TargetCapacitySpecification:
+        DefaultTargetCapacityType: on-demand
+        OnDemandTargetCapacity: !Ref AppServerCount
+        TotalTargetCapacity: !Ref AppServerCount
+      TagSpecifications:
+        - ResourceType: fleet
+          Tags:
+            - Key: Name
+              Value: sample-appserver-instance
+            - Key: Application
+              Value: sample
+            - Key: Role
+              Value: AppServer
+            - Key: Purpose
+              Value: drs-plan-automation-demo-source
+
+
+  DRSSampleServersFleetWebServers:
+    Type: AWS::EC2::EC2Fleet
+    Properties:
+      LaunchTemplateConfigs:
+        - LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref DRSServersLaunchTemplateWebServer
+            Version: !GetAtt DRSServersLaunchTemplateWebServer.LatestVersionNumber
+      Type: instant
+      TargetCapacitySpecification:
+        DefaultTargetCapacityType: on-demand
+        OnDemandTargetCapacity: !Ref WebServerCount
+        TotalTargetCapacity: !Ref WebServerCount
+      TagSpecifications:
+        - ResourceType: fleet
+          Tags:
+            - Key: Name
+              Value: sample-webserver-instance
+            - Key: Application
+              Value: sample
+            - Key: Role
+              Value: WebServer
+            - Key: Purpose
+              Value: drs-plan-automation-demo-source
+
+  InstanceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: DRS Sample Servers
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: drs-plan-automation-demo-source
+        - Key: Purpose
+          Value: drs-plan-automation-demo-source
+
+  OutboundAll:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: allow all outgoing
+      IpProtocol: "-1"
+      CidrIp: 0.0.0.0/0
+      GroupId: !Ref InstanceSG
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: drs-plan-automation-demo-source-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/service-role/AWSElasticDisasterRecoveryEc2InstancePolicy
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: drs-plan-automation-demo-source
+      Path: "/"
+      Roles:
+        - !Ref InstanceRole

@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS DRS Accelerator - Lambda function for plan automation API operations used by frontend interface
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+#  Api:
+#    TracingEnabled: True
+
+Parameters:
+  Memory:
+    Description: Memory to allocate to Lambda function
+    Type: Number
+    Default: 128
+  env:
+    Type: String
+    Default:  NONE
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+      - Ref: env
+      - NONE
+
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/
+      Handler: index.handler
+      Runtime: nodejs14.x
+      MemorySize: !Ref Memory
+      Layers: []
+      Timeout: 25
+      Architectures:
+        - x86_64
+      FunctionName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - drs-plan-automation-api
+          - Fn::Join:
+              - ''
+              - - drs-plan-automation-api
+                - "-"
+                - Ref: env
+      Environment:
+        Variables:
+          ENV:
+            Ref: env
+          DRS_STATE_MACHINE_ARN:
+            Fn::ImportValue: "drs-plan-automation-state-machine-arn"
+          DRS_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-applications-table-name"
+          DRS_EXECUTION_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-plan-execution-table-name"
+          DRS_RESULTS_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-plan-results-table-name"
+      Role:
+        Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - drs-plan-automation-api_lambda
+          - Fn::Join:
+              - ''
+              - - drs-plan-automation-api_lambda
+                - "-"
+                - Ref: env
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+  lambdaexecutionpolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: lambda-execution-policy
+      Roles:
+        - Ref: LambdaExecutionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              Fn::Sub:
+                - arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${lambda}:log-stream:*
+                - region:
+                    Ref: AWS::Region
+                  account:
+                    Ref: AWS::AccountId
+                  lambda:
+                    Ref: LambdaFunction
+          - Action:
+              - states:StartExecution
+            Resource:
+              - Fn::ImportValue: "drs-plan-automation-state-machine-arn"
+            Effect: Allow
+          - Effect: Allow
+            Action:
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Resource:
+              - Fn::ImportValue: "drs-plan-automation-applications-table-arn"
+              - Fn::Join:
+                  - "/"
+                  - - Fn::ImportValue: "drs-plan-automation-applications-table-arn"
+                    - index/*
+              - Fn::ImportValue: "drs-plan-automation-plan-execution-table-arn"
+              - Fn::Join:
+                  - "/"
+                  - - Fn::ImportValue: "drs-plan-automation-plan-execution-table-arn"
+                    - index/*
+              - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+              - Fn::Join:
+                  - "/"
+                  - - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+                    - index/*
+
+
+Outputs:
+  LambdaFunctionName:
+    Value: !Ref LambdaFunction
+    Description: "DRS Solution - API Lambda Function Name"
+    Export:
+      Name: "drs-plan-automation-lambda-api-name"
+
+  LambdaFunctionArn:
+    Value: !GetAtt LambdaFunction.Arn
+    Description: "DRS Solution - API Lambda Function Arn"
+    Export:
+      Name: "drs-plan-automation-lambda-api-arn"
+
+  Name:
+    Value:
+      Ref: LambdaFunction
+  Arn:
+    Value:
+      Fn::GetAtt:
+        - LambdaFunction
+        - Arn
+  Region:
+    Value:
+      Ref: AWS::Region
+  LambdaExecutionRole:
+    Value:
+      Ref: LambdaExecutionRole

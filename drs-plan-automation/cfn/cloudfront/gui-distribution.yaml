@@ -1,0 +1,215 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "CloudFront Distribution, with optional WAF and ip filtering"
+Parameters:
+  AllowedCIDRs:
+    Description: Allowed Public CIDRs to DRS interface comma separated list (e.g. "192.0.2.44/32", "192.0.2.0/24", "192.0.0.0/16").  If not specified, WAF will not be created and attached to distribution.
+    Type: String
+Conditions:
+  CreateWAF: !Not [!Equals [!Ref AllowedCIDRs, ""]]
+
+
+Resources:
+  s3bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls : true
+        BlockPublicPolicy : true
+        IgnorePublicAcls : true
+        RestrictPublicBuckets : true
+      LoggingConfiguration:
+        DestinationBucketName: !Ref loggingbucket
+        LogFilePrefix: s3-access-logs
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+
+  # The Amazon S3 bucket policy for securing the bucket hosting the application
+  BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      PolicyDocument:
+        Id: cfonlyaccess
+        Version: 2012-10-17
+        Statement:
+          - Sid: PolicyForCloudFrontPrivateContent
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CFOriginAccessIdentity.S3CanonicalUserId
+            Action: 's3:GetObject*'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref s3bucket
+                - /*
+      Bucket: !Ref s3bucket
+
+  loggingbucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls : true
+        BlockPublicPolicy : true
+        IgnorePublicAcls : true
+        RestrictPublicBuckets : true
+      AccessControl: LogDeliveryWrite
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+    DeletionPolicy: Delete
+
+  CFDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    DependsOn:
+      - CFOriginAccessIdentity
+    Properties:
+      DistributionConfig:
+        WebACLId:
+          !If [CreateWAF, !Ref drswaf, !Ref "AWS::NoValue"]
+        Origins:
+          - DomainName: !GetAtt s3bucket.RegionalDomainName
+            Id: myS3Origin
+            OriginPath: /live/build
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CFOriginAccessIdentity}"
+        Enabled: 'true'
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          TargetOriginId: myS3Origin
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # CachingOptimized
+          OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf # CORS-S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_All
+        Logging:
+          Bucket: !GetAtt loggingbucket.RegionalDomainName
+          Prefix: 'cloudfront-access-logs'
+
+  # The Amazon CloudFront origin access identity
+  CFOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    DependsOn:
+      - s3bucket
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'S3 Bucket ${s3bucket}'
+
+  #  drswaf:
+  #    Type: AWS::WAFv2::WebACL
+  #    Properties:
+  #      DefaultAction:
+  #        Block: { }
+  #      Description: WAF for DRS Plan Automation
+  #      Rules:
+  #        - Action:
+  #            Allow: { }
+  #          Name: webacl-allowed-ips
+  #          Priority: 0
+  #          Statement:
+  #            IPSetReferenceStatement:
+  #              Arn: !GetAtt drsallowedips.Arn
+  #          VisibilityConfig:
+  #            CloudWatchMetricsEnabled: False
+  #            MetricName: webacl-allowed-ips
+  #            SampledRequestsEnabled: False
+  #      VisibilityConfig:
+  #        CloudWatchMetricsEnabled: False
+  #        MetricName: webacl
+  #        SampledRequestsEnabled: False
+  #      Scope: CLOUDFRONT
+
+  drswaf:
+    Type: AWS::WAF::WebACL
+    Condition: CreateWAF
+    Properties:
+      DefaultAction:
+        Type: ALLOW
+      Name: WAF for DRS Plan Automation
+      Rules:
+        !If
+        - CreateWAF
+        - - Action:
+              Type: ALLOW
+            RuleId: !Ref drsallowedipsrule
+            Priority: 0
+        - !Ref AWS::NoValue
+      MetricName: webacl
+
+  drsallowedipsrule:
+    Condition: CreateWAF
+    Type: AWS::WAF::Rule
+    Properties:
+      MetricName: drsallowedips
+      Name: drsallowedips
+      Predicates:
+        - DataId:  !Ref drsallowedips
+          Negated: false
+          Type: IPMatch
+
+  drsallowedips:
+    Condition: CreateWAF
+    Type: AWS::WAF::IPSet
+    Properties:
+      Name: Allowed CIDRs for DRS Plan Automation frontend web interface
+      IPSetDescriptors:
+        - Type: IPV4
+          Value: !Ref AllowedCIDRs
+
+#  drsallowedips:
+#    Type: AWS::WAFv2::IPSet
+#    Properties:
+#      Addresses:
+#        - Ref: AllowedCIDRs
+#      Description: Allowed CIDRs for DRS Plan Automation frontend web interface
+#      IPAddressVersion: IPV4
+#      Scope: CLOUDFRONT
+
+
+#      Tags:
+#        - Tag
+
+
+
+Outputs:
+  DRSDistributionS3BucketName:
+    Value: !Ref s3bucket
+    Description: "S3 Bucket Name for Plan Automation Distribution"
+    Export:
+      Name: "drs-distribution-s3-bucket-name"
+
+
+  DRSDistributionS3BucketArn:
+    Value: !GetAtt s3bucket.Arn
+    Description: "S3 Bucket Arn for Plan Automation Distribution"
+    Export:
+      Name: "drs-distribution-s3-bucket-arn"
+
+
+  DRSDistributionLoggingS3BucketName:
+    Value: !Ref loggingbucket
+    Description: "S3 Logging Bucket Name for Plan Automation Distribution"
+    Export:
+      Name: "drs-distribution-s3-logging-bucket-name"
+
+
+  DRSDistributionLoggingS3BucketArn:
+    Value: !GetAtt loggingbucket.Arn
+    Description: "S3 Logging Bucket Arn for Plan Automation Distribution"
+    Export:
+      Name: "drs-distribution-s3-logging-bucket-arn"
+
+  drswafarn:
+    Condition: CreateWAF
+    Value: !Ref drswaf
+    Description: "WAF for DRS CloudFront Distribution"
+    Export:
+      Name: "drs-plan-automation-waf"

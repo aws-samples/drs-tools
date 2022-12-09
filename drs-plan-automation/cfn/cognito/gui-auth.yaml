@@ -1,0 +1,452 @@
+---
+Description: DRS Plan Automation Solution - Cognito
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  env:
+    Type: String
+  authRoleName:
+    Type: String
+  unAuthRoleName:
+    Type: String
+  identityPoolName:
+    Type: String
+  allowUnauthenticatedIdentities:
+    Type: String
+  userPoolName:
+    Type: String
+  mfaConfiguration:
+    Type: String
+  emailVerificationSubject:
+    Type: String
+  emailVerificationMessage:
+    Type: String
+  defaultPasswordPolicy:
+    Type: String
+  passwordPolicyMinLength:
+    Type: String
+  userpoolClientGenerateSecret:
+    Type: String
+  userpoolClientRefreshTokenValidity:
+    Type: String
+  userpoolClientLambdaRole:
+    Type: String
+  userpoolClientSetAttributes:
+    Type: String
+  usernameAttributes:
+    Type: String
+  usernameCaseSensitive:
+    Type: String
+  demoEmailAddress:
+    Type: String
+  allowAdminCreatedUsersOnly:
+    Type: String
+    Default: true
+
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+      - Ref: env
+      - NONE
+  ShouldOutputAppClientSecrets:
+    Fn::Equals:
+      - Ref: userpoolClientGenerateSecret
+      - true
+
+Resources:
+  DemoUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      DesiredDeliveryMediums:
+        - EMAIL
+      UserAttributes:
+        - Name: email
+          Value: !Ref demoEmailAddress
+      Username: !Ref demoEmailAddress
+      UserPoolId: !Ref UserPool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: !Ref allowAdminCreatedUsersOnly
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage:
+        Ref: emailVerificationMessage
+      EmailVerificationSubject:
+        Ref: emailVerificationSubject
+      MfaConfiguration:
+        Ref: mfaConfiguration
+      Policies:
+        PasswordPolicy:
+          MinimumLength:
+            Ref: passwordPolicyMinLength
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          RequireUppercase: false
+      Schema:
+        - Mutable: true
+          Name: email
+          Required: true
+      UsernameAttributes:
+        - Ref: usernameAttributes
+      UsernameConfiguration:
+        CaseSensitive: false
+      UserPoolName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - Ref: userPoolName
+          - Fn::Join:
+              - ''
+              - - Ref: userPoolName
+                - "-"
+                - Ref: env
+  UserPoolClientWeb:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId:
+        Ref: UserPool
+      ClientName: drsplangui_web_client
+      RefreshTokenValidity:
+        Ref: userpoolClientRefreshTokenValidity
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId:
+        Ref: UserPool
+      ClientName: drsplangui_app_client
+      GenerateSecret:
+        Ref: userpoolClientGenerateSecret
+      RefreshTokenValidity:
+        Ref: userpoolClientRefreshTokenValidity
+  UserPoolClientRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - Ref: userpoolClientLambdaRole
+          - Fn::Join:
+              - ''
+              - - upClientLambdaRole4aeb1daa
+                - Fn::Select:
+                    - 3
+                    - Fn::Split:
+                        - "-"
+                        - Ref: AWS::StackName
+                - "-"
+                - Ref: env
+  UserPoolClientLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          const response = require('cfn-response');
+          const aws = require('aws-sdk');
+          const identity = new aws.CognitoIdentityServiceProvider();
+          exports.handler = (event, context, callback) => {
+            if (event.RequestType == 'Delete') {
+              response.send(event, context, response.SUCCESS, {});
+            }
+            if (event.RequestType == 'Update' || event.RequestType == 'Create') {
+              const params = {
+                ClientId: event.ResourceProperties.clientId,
+                UserPoolId: event.ResourceProperties.userpoolId,
+              };
+              identity
+                .describeUserPoolClient(params)
+                .promise()
+                .then(res => {
+                  response.send(event, context, response.SUCCESS, { appSecret: res.UserPoolClient.ClientSecret });
+                })
+                .catch(err => {
+                  response.send(event, context, response.FAILED, { err });
+                });
+            }
+          };
+      Role:
+        Fn::GetAtt:
+          - UserPoolClientRole
+          - Arn
+      Handler: index.handler
+      Runtime: nodejs14.x
+      Timeout: 300
+  UserPoolClientLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - cognito-idp:DescribeUserPoolClient
+            Resource:
+              Fn::GetAtt:
+                - UserPool
+                - Arn
+      PolicyName: drsplangui_userpoolclient_lambda_iam_policy
+      Roles:
+        - Ref: UserPoolClientRole
+    DependsOn:
+      - UserPoolClientLambda
+  UserPoolClientLogPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              Fn::Sub:
+                - arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${lambda}:log-stream:*
+                - region:
+                    Ref: AWS::Region
+                  account:
+                    Ref: AWS::AccountId
+                  lambda:
+                    Ref: UserPoolClientLambda
+      PolicyName: drsplangui_userpoolclient_lambda_log_policy
+      Roles:
+        - Ref: UserPoolClientRole
+    DependsOn:
+      - UserPoolClientLambdaPolicy
+  UserPoolClientInputs:
+    Type: Custom::LambdaCallout
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - UserPoolClientLambda
+          - Arn
+      clientId:
+        Ref: UserPoolClient
+      userpoolId:
+        Ref: UserPool
+    DependsOn:
+      - UserPoolClientLogPolicy
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  AuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+      RoleName: !Ref authRoleName
+
+  PolicyAPIGWAuth1:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - execute-api:Invoke
+            Resource:
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
+                    - "/*/applications/*"
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
+                    - "/*/applications"
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
+                    - "/*/results/*"
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
+                    - "/*/results"
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
+                    - "/*/result"
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
+                    - "/*/result/*"
+      Roles:
+        - Ref: AuthRole
+
+
+  UnAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: unauthenticated
+      RoleName: !Ref unAuthRoleName
+
+
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      AllowUnauthenticatedIdentities: !Ref allowUnauthenticatedIdentities
+      CognitoIdentityProviders:
+        - ClientId:
+            Ref: UserPoolClient
+          ProviderName:
+            Fn::Sub:
+              - cognito-idp.${region}.amazonaws.com/${client}
+              - region:
+                  Ref: AWS::Region
+                client:
+                  Ref: UserPool
+        - ClientId:
+            Ref: UserPoolClientWeb
+          ProviderName:
+            Fn::Sub:
+              - cognito-idp.${region}.amazonaws.com/${client}
+              - region:
+                  Ref: AWS::Region
+                client:
+                  Ref: UserPool
+      IdentityPoolName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - drsplangui_identitypool
+          - Fn::Join:
+              - ''
+              - - drsplangui_identitypool_
+                - Ref: env
+    DependsOn:
+      - UserPoolClientInputs
+
+  IdentityPoolRoleMap:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: IdentityPool
+      Roles:
+        unauthenticated: !GetAtt UnAuthRole.Arn
+        authenticated: !GetAtt AuthRole.Arn
+
+Outputs:
+  IdentityPoolId:
+    Description: Id for the identity pool
+    Value:
+      Ref: IdentityPool
+  IdentityPoolName:
+    Value:
+      Fn::GetAtt:
+        - IdentityPool
+        - Name
+  UserPoolId:
+    Description: Id for the user pool
+    Value:
+      Ref: UserPool
+  UserPoolArn:
+    Description: Arn for the user pool
+    Value:
+      Fn::GetAtt:
+        - UserPool
+        - Arn
+  UserPoolName:
+    Value:
+      Ref: userPoolName
+  AppClientIDWeb:
+    Description: The user pool app client id for web
+    Value:
+      Ref: UserPoolClientWeb
+  AppClientID:
+    Description: The user pool app client id
+    Value:
+      Ref: UserPoolClient
+  AppClientSecret:
+    Value:
+      Fn::GetAtt:
+        - UserPoolClientInputs
+        - appSecret
+    Condition: ShouldOutputAppClientSecrets

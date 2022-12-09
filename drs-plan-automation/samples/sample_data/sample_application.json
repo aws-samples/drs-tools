@@ -1,0 +1,138 @@
+{
+  "AppId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d_9b1deb4d",
+  "AppName": "Sample Application",
+  "Description": "Sample application aligned with sample EC2 environment provided with solution",
+  "KeyName": "Application",
+  "KeyValue": "sample",
+  "Plans": [
+    {
+      "CreationDate": "1200",
+      "Description": "Sample plan for sample application",
+      "LastExecutedDate": "1200",
+      "LastModifiedDate": "1200",
+      "Owner": "myemail@example.com",
+      "PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
+      "PlanName": "Default",
+      "RPO": "60",
+      "RTO": "1200",
+      "Waves": [
+        {
+          "Description": "Start database servers",
+          "KeyName": "Role",
+          "KeyValue": "DBServer",
+          "MaxWaitTime": 900,
+          "Name": "Sample Databases Wave",
+          "PostWaveActions": [
+            {
+              "Description": "Create an SSM Ops Item after DRS wave completes",
+              "MaxWaitTime": 90,
+              "Name": "Sample PostWave Action - Database Wave: Create PostWave SSM OpsItem",
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test OpsItem created from a PostWaveAction from the DRS PLan Automation solution Database wave"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Plan Automation PostWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "PreWaveActions": [
+            {
+              "Description": "Create an SSM OpsItem before DRS database wave starts",
+              "MaxWaitTime": 90,
+              "Name": "Sample PreWave Action - Database Wave: Create PreWave SSM OpsItem",
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test OpsItem created from a PreWaveAction from the DRS PLan Automation solution Database Wave"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Plan Automation PreWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "UpdateTime": 30
+        },
+        {
+          "Description": "Start App Servers",
+          "KeyName": "Role",
+          "KeyValue": "AppServer",
+          "MaxWaitTime": 900,
+          "Name": "Sample App Server Wave",
+          "PostWaveActions": [
+            {
+              "Description": "Create an SSM Ops Item after the AppServer wave completes",
+              "MaxWaitTime": 90,
+              "Name": "Sample PostWave Action - AppServer Wave: Create PostWave OpsItem",
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test OpsItem created from a PostWave Action from the DRS PLan Automation solution AppServer Wave"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Plan Automation PostWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "PreWaveActions": [
+            {
+              "Description": "Create an SSM Ops Item before the AppServer wave starts",
+              "MaxWaitTime": 90,
+              "Name": "Sample PreWave Action - AppServer Wave: Create PreWave SSM OpsItem",
+              "StartAutomationExecution": {
+                "DocumentName": "CreateOpsItem",
+                "Parameters": {
+                  "Category": [
+                    "Recovery"
+                  ],
+                  "Description": [
+                    "This is a test OpsItem created from a PreWave action from the DRS PLan Automation solution AppServer Wave"
+                  ],
+                  "Priority": [
+                    "1"
+                  ],
+                  "Title": [
+                    "DRS Plan Automation PreWaveAction"
+                  ]
+                }
+              },
+              "UpdateTime": 30
+            }
+          ],
+          "UpdateTime": 30
+        }
+      ]
+    }
+  ]
+}

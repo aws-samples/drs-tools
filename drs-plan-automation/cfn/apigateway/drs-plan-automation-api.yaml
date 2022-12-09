@@ -1,0 +1,514 @@
+---
+Description: API Gateway Resource for AWS Amplify CLI
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  env:
+    Type: String
+    Default: NONE
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+      - Ref: env
+      - NONE
+
+Resources:
+  functiondrsplanguiPermissiondrsplangui:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::ImportValue: "drs-plan-automation-lambda-api-name"
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ''
+          - - 'arn:aws:execute-api:'
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: drsplangui
+            - "/*/*/*"
+  drsplangui:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Body:
+        swagger: '2.0'
+        info:
+          version: '2018-05-24T17:52:00Z'
+          title: drsplangui
+        host:
+          Fn::Join:
+            - ''
+            - - apigateway.
+              - Ref: AWS::Region
+              - ".amazonaws.com"
+        basePath:
+          Fn::If:
+            - ShouldNotCreateEnvResources
+            - "/prod"
+            - Fn::Join:
+                - ''
+                - - "/"
+                  - Ref: env
+        schemes:
+          - https
+        paths:
+          "/applications":
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                passthroughBehavior: when_no_match
+                type: mock
+            x-amazon-apigateway-any-method:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: body
+                  name: RequestSchema
+                  required: false
+                  schema:
+                    "$ref": "#/definitions/RequestSchema"
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                uri:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:apigateway:'
+                      - Ref: AWS::Region
+                      - ":lambda:path/2015-03-31/functions/"
+                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - "/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+              security:
+                - sigv4: []
+          "/applications/{proxy+}":
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                passthroughBehavior: when_no_match
+                type: mock
+            x-amazon-apigateway-any-method:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: body
+                  name: RequestSchema
+                  required: false
+                  schema:
+                    "$ref": "#/definitions/RequestSchema"
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                uri:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:apigateway:'
+                      - Ref: AWS::Region
+                      - ":lambda:path/2015-03-31/functions/"
+                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - "/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+              security:
+                - sigv4: []
+          "/result":
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                passthroughBehavior: when_no_match
+                type: mock
+            x-amazon-apigateway-any-method:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: body
+                  name: RequestSchema
+                  required: false
+                  schema:
+                    "$ref": "#/definitions/RequestSchema"
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                uri:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:apigateway:'
+                      - Ref: AWS::Region
+                      - ":lambda:path/2015-03-31/functions/"
+                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - "/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+              security:
+                - sigv4: []
+          "/result/{proxy+}":
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                passthroughBehavior: when_no_match
+                type: mock
+            x-amazon-apigateway-any-method:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: body
+                  name: RequestSchema
+                  required: false
+                  schema:
+                    "$ref": "#/definitions/RequestSchema"
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                uri:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:apigateway:'
+                      - Ref: AWS::Region
+                      - ":lambda:path/2015-03-31/functions/"
+                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - "/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+              security:
+                - sigv4: []
+          "/results":
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                passthroughBehavior: when_no_match
+                type: mock
+            x-amazon-apigateway-any-method:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: body
+                  name: RequestSchema
+                  required: false
+                  schema:
+                    "$ref": "#/definitions/RequestSchema"
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                uri:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:apigateway:'
+                      - Ref: AWS::Region
+                      - ":lambda:path/2015-03-31/functions/"
+                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - "/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+              security:
+                - sigv4: []
+          "/results/{proxy+}":
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                requestTemplates:
+                  application/json: '{"statusCode": 200}'
+                passthroughBehavior: when_no_match
+                type: mock
+            x-amazon-apigateway-any-method:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: body
+                  name: RequestSchema
+                  required: false
+                  schema:
+                    "$ref": "#/definitions/RequestSchema"
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    "$ref": "#/definitions/ResponseSchema"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: '200'
+                uri:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:apigateway:'
+                      - Ref: AWS::Region
+                      - ":lambda:path/2015-03-31/functions/"
+                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - "/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+              security:
+                - sigv4: []
+        securityDefinitions:
+          sigv4:
+            type: apiKey
+            name: Authorization
+            in: header
+            x-amazon-apigateway-authtype: awsSigv4
+        definitions:
+          RequestSchema:
+            type: object
+            required:
+              - request
+            properties:
+              request:
+                type: string
+            title: Request Schema
+          ResponseSchema:
+            type: object
+            required:
+              - response
+            properties:
+              response:
+                type: string
+            title: Response Schema
+      Description: ''
+      FailOnWarnings: true
+      Name: drsplangui
+  drsplanguiDefault4XXResponse:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseType: DEFAULT_4XX
+      RestApiId:
+        Ref: drsplangui
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+        gatewayresponse.header.Access-Control-Expose-Headers: "'Date,X-Amzn-ErrorType'"
+  drsplanguiDefault5XXResponse:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseType: DEFAULT_5XX
+      RestApiId:
+        Ref: drsplangui
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+        gatewayresponse.header.Access-Control-Expose-Headers: "'Date,X-Amzn-ErrorType'"
+
+  DeploymentAPIGWdrsplanguif5060aa4:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: drsplangui
+    Properties:
+      RestApiId:
+        Ref: drsplangui
+      Description: The Development stage deployment of your API.
+      StageName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - prod
+          - Ref: env
+
+
+Outputs:
+  DRSPlanAutomationAPIIde:
+    Value: !Ref drsplangui
+    Description: "DRS Plan Automation API ID"
+    Export:
+      Name: "drs-plan-automation-api-id"
+
+  drsplangui:
+    Description: Root URL of the API gateway
+    Value:
+      Fn::Join:
+        - ''
+        - - https://
+          - Ref: drsplangui
+          - ".execute-api."
+          - Ref: AWS::Region
+          - ".amazonaws.com/"
+          - Fn::If:
+              - ShouldNotCreateEnvResources
+              - prod
+              - Ref: env
+    Export:
+      Name: "drs-plan-automation-api-url"
+
+  DRSPlanAutomationAPIName:
+    Description: API Friendly name
+    Value: drsplangui
+    Export:
+      Name: "drs-plan-automation-api-name"

@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SSM Document example for PreWave / PostWave SSM Action Support
+#Parameters:
+#  AutomationAssumeRole:
+#    Description: SSM Automation AssumeRole ARN
+#    Type: String
+
+
+Resources:
+  InstallAndManageCloudWatchDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentFormat: YAML
+      DocumentType: Automation
+      Name:  CreateOpsItem
+      Content:
+        schemaVersion: '0.3'
+        description: SSM Automation for creating an SSM Ops Item
+#        assumeRole: "{{AutomationAssumeRole}}"
+        parameters:
+          Category:
+            type: String
+          Description:
+            type: String
+          Priority:
+            type: Integer
+          Title:
+            type: String
+            default: 'test ops item from drs solution'
+        mainSteps:
+          - name: CreateOpsItem
+            action: aws:executeAwsApi
+            inputs:
+              Service: ssm
+              Api: CreateOpsItem
+              Source: "drs-solution"
+              Category: "{{Category}}"
+              Priority: "{{Priority}}"
+              Title: "{{Title}}"
+              Description: "{{Description}}"
+            outputs:
+              - Name: OpsItemId
+                Selector: "$.OpsItemId"
+                Type: String
+            isEnd: true
