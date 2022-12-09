@@ -27,9 +27,9 @@ Resources:
         Fn::GetAtt:
           - CodePipelineManageStepsRole
           - Arn
-      DisableInboundStageTransitions:
-        - StageName: UpdateDRSPipeline
-          Reason: Wait for updates to baseline solution
+#      DisableInboundStageTransitions:
+#        - StageName: UpdateDRSPipeline
+#          Reason: Wait for updates to baseline solution
       Stages:
         - Name: SourceStageCodeCommit
           Actions:
@@ -201,24 +201,6 @@ Resources:
           Actions:
             - InputArtifacts:
                 - Name: SourceArtifacts
-              Name: DeployDRSPlanDistributionWAF
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: '1'
-                Provider: CloudFormation
-              Configuration:
-                ActionMode: CREATE_UPDATE
-                StackName: drs-plan-automation-distribution-waf
-                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
-                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
-                TemplatePath: SourceArtifacts::cfn/waf/cf-waf.yaml
-                TemplateConfiguration: SourceArtifacts::cfn/waf/cf-waf.json
-# WAF CloudFront requires us-east-1 creation
-#              Region:  us-east-1
-              RunOrder: 1
-            - InputArtifacts:
-                - Name: SourceArtifacts
               Name: DeployDRSPlanDistribution
               ActionTypeId:
                 Category: Deploy
@@ -232,12 +214,10 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 OutputFileName: distribution.json
                 TemplatePath: SourceArtifacts::cfn/cloudfront/gui-distribution.yaml
-              #                TemplateConfiguration: SourceArtifacts::cfn/cloudfront/s3_distribution.json
-              #                OutputFileName:
-              #                ParameterOverrides:
+                TemplateConfiguration: SourceArtifacts::cfn/cloudfront/gui-distribution.json
               OutputArtifacts:
                 - Name: DeployDRSPlanDistribution
-              RunOrder: 2
+              RunOrder: 1
             - InputArtifacts:
                 - Name: SourceArtifacts
                 - Name: DeployDRSPlanAuth
@@ -252,7 +232,7 @@ Resources:
               Configuration:
                 ProjectName:  BuildAndDeployFrontEnd
                 PrimarySource: SourceArtifacts
-              RunOrder: 3
+              RunOrder: 2
   CodePipelineManageStepsRole:
     Type: AWS::IAM::Role
     Properties:

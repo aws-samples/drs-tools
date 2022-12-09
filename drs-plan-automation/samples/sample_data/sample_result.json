@@ -1,0 +1,2055 @@
+{
+  "AppId_PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d_9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
+  "ExecutionId": "arn:aws:states:us-west-2:123456789012:execution:DRSPlanAutomationStateMachine-CT5o7CiTLdGG:86f4e81d-e7a8-4319-9ae2-e66916006f9b",
+  "AppName": "Sample Application",
+  "duration": "20m 44s",
+  "ExecutionEndTime": "2022-12-07T19:35:50.311377+00:00",
+  "ExecutionStartTime": "2022-12-07T19:15:06.161461+0000",
+  "ExecutionStartTimeMs": 1670440506161,
+  "isDrill": true,
+  "KeyName": "Application",
+  "KeyValue": "sample",
+  "log": [
+  ],
+  "Owner": "myemail@example.com",
+  "planDetails": {
+    "CreationDate": "1200",
+    "Description": "Sample plan for sample application",
+    "LastExecutedDate": "1200",
+    "LastModifiedDate": "1200",
+    "Owner": "myemail@example.com",
+    "PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
+    "PlanName": "Default",
+    "RPO": "60",
+    "RTO": "1200",
+    "Waves": [
+      {
+        "Description": "Start database servers",
+        "KeyName": "Role",
+        "KeyValue": "DBServer",
+        "MaxWaitTime": 900,
+        "Name": "Sample Databases Wave",
+        "PostWaveActions": [
+          {
+            "Description": "Create an SSM Ops Item after DRS wave completes",
+            "MaxWaitTime": 90,
+            "Name": "Sample PostWave Action - Database Wave: Create PostWave SSM OpsItem",
+            "StartAutomationExecution": {
+              "DocumentName": "CreateOpsItem",
+              "Parameters": {
+                "Category": [
+                  "Recovery"
+                ],
+                "Description": [
+                  "This is a test OpsItem created from a PostWaveAction from the DRS PLan Automation solution Database wave"
+                ],
+                "Priority": [
+                  "1"
+                ],
+                "Title": [
+                  "DRS Plan Automation PostWaveAction"
+                ]
+              }
+            },
+            "UpdateTime": 30
+          }
+        ],
+        "PreWaveActions": [
+          {
+            "Description": "Create an SSM OpsItem before DRS database wave starts",
+            "MaxWaitTime": 90,
+            "Name": "Sample PreWave Action - Database Wave: Create PreWave SSM OpsItem",
+            "StartAutomationExecution": {
+              "DocumentName": "CreateOpsItem",
+              "Parameters": {
+                "Category": [
+                  "Recovery"
+                ],
+                "Description": [
+                  "This is a test OpsItem created from a PreWaveAction from the DRS PLan Automation solution Database Wave"
+                ],
+                "Priority": [
+                  "1"
+                ],
+                "Title": [
+                  "DRS Plan Automation PreWaveAction"
+                ]
+              }
+            },
+            "UpdateTime": 30
+          }
+        ],
+        "UpdateTime": 30
+      },
+      {
+        "Description": "Start App Servers",
+        "KeyName": "Role",
+        "KeyValue": "AppServer",
+        "MaxWaitTime": 900,
+        "Name": "Sample App Server Wave",
+        "PostWaveActions": [
+          {
+            "Description": "Create an SSM Ops Item after the AppServer wave completes",
+            "MaxWaitTime": 90,
+            "Name": "Sample PostWave Action - AppServer Wave: Create PostWave OpsItem",
+            "StartAutomationExecution": {
+              "DocumentName": "CreateOpsItem",
+              "Parameters": {
+                "Category": [
+                  "Recovery"
+                ],
+                "Description": [
+                  "This is a test OpsItem created from a PostWave Action from the DRS PLan Automation solution AppServer Wave"
+                ],
+                "Priority": [
+                  "1"
+                ],
+                "Title": [
+                  "DRS Plan Automation PostWaveAction"
+                ]
+              }
+            },
+            "UpdateTime": 30
+          }
+        ],
+        "PreWaveActions": [
+          {
+            "Description": "Create an SSM Ops Item before the AppServer wave starts",
+            "MaxWaitTime": 90,
+            "Name": "Sample PreWave Action - AppServer Wave: Create PreWave SSM OpsItem",
+            "StartAutomationExecution": {
+              "DocumentName": "CreateOpsItem",
+              "Parameters": {
+                "Category": [
+                  "Recovery"
+                ],
+                "Description": [
+                  "This is a test OpsItem created from a PreWave action from the DRS PLan Automation solution AppServer Wave"
+                ],
+                "Priority": [
+                  "1"
+                ],
+                "Title": [
+                  "DRS Plan Automation PreWaveAction"
+                ]
+              }
+            },
+            "UpdateTime": 30
+          }
+        ],
+        "UpdateTime": 30
+      }
+    ]
+  },
+  "SourceServers": [
+    {
+      "s-51d6b65c73391918f": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-51d6b65c73391918f",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:33.829738+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:42:54.510190+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M12.136909S",
+          "firstByteDateTime": "2022-12-05T17:43:52.777003+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:42.208899+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-0b3407219a2297268",
+            "fqdn": "ip-10-0-0-215.ec2.internal",
+            "hostname": "ip-10-0-0-215.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:34.709010+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "3206145913297"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-51d6b65c73391918f",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-db-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "DBServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-0b3407219a2297268",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-5f3ddf07c0eb9fe45": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-5f3ddf07c0eb9fe45",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:56:10.328147+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:42:58.089537+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M8.529958S",
+          "firstByteDateTime": "2022-12-05T17:44:12.276106+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:45.206283+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-027e65d2e228e629c",
+            "fqdn": "ip-10-0-0-15.ec2.internal",
+            "hostname": "ip-10-0-0-15.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:36.958134+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "3191362389569"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-5f3ddf07c0eb9fe45",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-webserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "WebServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-027e65d2e228e629c",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-5817ab4ccdfa96db3": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-5817ab4ccdfa96db3",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:26.270363+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:00.540758+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M6.120787S",
+          "firstByteDateTime": "2022-12-05T17:44:30.842953+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:33.709902+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-0995f85f8064c223a",
+            "fqdn": "ip-10-0-0-72.ec2.internal",
+            "hostname": "ip-10-0-0-72.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:31.095525+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "2202279013807"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-5817ab4ccdfa96db3",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-appserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "AppServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-0995f85f8064c223a",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-559fc088ae71428c9": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-559fc088ae71428c9",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:35.763396+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:01.027146+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M5.635571S",
+          "firstByteDateTime": "2022-12-05T17:45:09.949063+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:43.031198+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-0aede6f532fa01154",
+            "fqdn": "ip-10-0-0-98.ec2.internal",
+            "hostname": "ip-10-0-0-98.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:36.241561+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+                "10.0.0.98"
+              ],
+              "isPrimary": true,
+              "macAddress": "02-E5-D1-63-C4-17"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-559fc088ae71428c9",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-webserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "WebServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-0aede6f532fa01154",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-57e730f6102e1f793": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-57e730f6102e1f793",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:21:00+00:00",
+            "startDateTime": "2022-12-07T18:50:35.927739+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:10.925542+00:00",
+          "elapsedReplicationDuration": "P2DT1H31M55.725764S",
+          "firstByteDateTime": "2022-12-05T17:45:54.960941+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:36.665040+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-08f4c86af9e81d433",
+            "fqdn": "ip-10-0-0-23.ec2.internal",
+            "hostname": "ip-10-0-0-23.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:19.228835+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "3126391677921"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-57e730f6102e1f793",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-appserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "AppServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-08f4c86af9e81d433",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-5c555d9c008f90131": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-5c555d9c008f90131",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:34.470099+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:11.505595+00:00",
+          "elapsedReplicationDuration": "P2DT1H31M55.126716S",
+          "firstByteDateTime": "2022-12-05T17:45:34.059636+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:42.575530+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-06abbdbf3aec088dc",
+            "fqdn": "ip-10-0-0-148.ec2.internal",
+            "hostname": "ip-10-0-0-148.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:34.508278+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+                "10.0.0.148"
+              ],
+              "isPrimary": true,
+              "macAddress": "02-FE-E4-21-4C-2D"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-5c555d9c008f90131",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-db-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "DBServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-06abbdbf3aec088dc",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-51d6b65c73391918f": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-51d6b65c73391918f",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:33.829738+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:42:54.510190+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M12.136909S",
+          "firstByteDateTime": "2022-12-05T17:43:52.777003+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:42.208899+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-0b3407219a2297268",
+            "fqdn": "ip-10-0-0-215.ec2.internal",
+            "hostname": "ip-10-0-0-215.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:34.709010+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "3206145913297"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-51d6b65c73391918f",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-db-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "DBServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-0b3407219a2297268",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-5f3ddf07c0eb9fe45": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-5f3ddf07c0eb9fe45",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:56:10.328147+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:42:58.089537+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M8.529958S",
+          "firstByteDateTime": "2022-12-05T17:44:12.276106+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:45.206283+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-027e65d2e228e629c",
+            "fqdn": "ip-10-0-0-15.ec2.internal",
+            "hostname": "ip-10-0-0-15.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:36.958134+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "3191362389569"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-5f3ddf07c0eb9fe45",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-webserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "WebServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-027e65d2e228e629c",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-5817ab4ccdfa96db3": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-5817ab4ccdfa96db3",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:26.270363+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:00.540758+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M6.120787S",
+          "firstByteDateTime": "2022-12-05T17:44:30.842953+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:33.709902+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-0995f85f8064c223a",
+            "fqdn": "ip-10-0-0-72.ec2.internal",
+            "hostname": "ip-10-0-0-72.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:31.095525+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "2202279013807"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-5817ab4ccdfa96db3",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-appserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "AppServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-0995f85f8064c223a",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-559fc088ae71428c9": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-559fc088ae71428c9",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:35.763396+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:01.027146+00:00",
+          "elapsedReplicationDuration": "P2DT1H32M5.635571S",
+          "firstByteDateTime": "2022-12-05T17:45:09.949063+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:43.031198+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-0aede6f532fa01154",
+            "fqdn": "ip-10-0-0-98.ec2.internal",
+            "hostname": "ip-10-0-0-98.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:36.241561+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+                "10.0.0.98"
+              ],
+              "isPrimary": true,
+              "macAddress": "02-E5-D1-63-C4-17"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-559fc088ae71428c9",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-webserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "WebServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-0aede6f532fa01154",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-57e730f6102e1f793": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-57e730f6102e1f793",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:21:00+00:00",
+            "startDateTime": "2022-12-07T18:50:35.927739+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:10.925542+00:00",
+          "elapsedReplicationDuration": "P2DT1H31M55.725764S",
+          "firstByteDateTime": "2022-12-05T17:45:54.960941+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:36.665040+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-08f4c86af9e81d433",
+            "fqdn": "ip-10-0-0-23.ec2.internal",
+            "hostname": "ip-10-0-0-23.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:19.228835+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+              ],
+              "isPrimary": false,
+              "macAddress": "3126391677921"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-57e730f6102e1f793",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-appserver-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "AppServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-08f4c86af9e81d433",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    },
+    {
+      "s-5c555d9c008f90131": {
+        "arn": "arn:aws:drs:us-west-2:123456789012:source-server/s-5c555d9c008f90131",
+        "dataReplicationInfo": {
+          "dataReplicationInitiation": {
+            "nextAttemptDateTime": "2022-12-07T19:25:00+00:00",
+            "startDateTime": "2022-12-07T18:54:34.470099+00:00",
+            "steps": [
+              {
+                "name": "WAIT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CREATE_SECURITY_GROUP",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "LAUNCH_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "BOOT_REPLICATION_SERVER",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "AUTHENTICATE_WITH_SERVICE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "DOWNLOAD_REPLICATION_SOFTWARE",
+                "status": "SKIPPED"
+              },
+              {
+                "name": "CREATE_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "ATTACH_STAGING_DISKS",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "PAIR_REPLICATION_SERVER_WITH_AGENT",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "CONNECT_AGENT_TO_REPLICATION_SERVER",
+                "status": "SUCCEEDED"
+              },
+              {
+                "name": "START_DATA_TRANSFER",
+                "status": "SUCCEEDED"
+              }
+            ]
+          },
+          "dataReplicationState": "CONTINUOUS",
+          "lagDuration": "P0D",
+          "replicatedDisks": [
+            {
+              "backloggedStorageBytes": 0,
+              "deviceName": "/dev/nvme0n1",
+              "replicatedStorageBytes": 8589934592,
+              "rescannedStorageBytes": 8589934592,
+              "totalStorageBytes": 8589934592
+            }
+          ]
+        },
+        "lastLaunchResult": "NOT_STARTED",
+        "lifeCycle": {
+          "addedToServiceDateTime": "2022-12-05T17:43:11.505595+00:00",
+          "elapsedReplicationDuration": "P2DT1H31M55.126716S",
+          "firstByteDateTime": "2022-12-05T17:45:34.059636+00:00",
+          "lastLaunch": {
+            "initiated": {}
+          },
+          "lastSeenByServiceDateTime": "2022-12-07T19:14:42.575530+00:00"
+        },
+        "sourceProperties": {
+          "cpus": [
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            },
+            {
+              "cores": 1,
+              "modelName": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz"
+            }
+          ],
+          "disks": [
+            {
+              "bytes": 8589934592,
+              "deviceName": "/dev/nvme0n1"
+            }
+          ],
+          "identificationHints": {
+            "awsInstanceID": "i-06abbdbf3aec088dc",
+            "fqdn": "ip-10-0-0-148.ec2.internal",
+            "hostname": "ip-10-0-0-148.ec2.internal"
+          },
+          "lastUpdatedDateTime": "2022-12-07T18:54:34.508278+00:00",
+          "networkInterfaces": [
+            {
+              "ips": [
+                "10.0.0.148"
+              ],
+              "isPrimary": true,
+              "macAddress": "02-FE-E4-21-4C-2D"
+            }
+          ],
+          "os": {
+            "fullString": "Linux version 4.14.299-223.520.amzn2.x86_64 (mockbuild@ip-10-0-61-64) (gcc version 7.3.1 20180712 (Red Hat 7.3.1-13) (GCC)) #1 SMP Wed Nov 23 23:04:46 UTC 2022"
+          },
+          "ramBytes": 1002663936,
+          "recommendedInstanceType": "c5.large"
+        },
+        "sourceServerID": "s-5c555d9c008f90131",
+        "tags": {
+          "Application": "sample",
+          "Name": "sample-db-instance",
+          "Purpose": "drs-plan-automation-demo-source",
+          "Role": "DBServer",
+          "source:account": "123456789012",
+          "source:instance-id": "i-06abbdbf3aec088dc",
+          "source:instance-type": "t3.micro",
+          "source:region": "us-east-1"
+        }
+      }
+    }
+  ],
+  "status": "completed",
+  "topicArn": null,
+  "user": "a_user@example.com",
+  "Waves": [
+    {
+      "drs": {
+        "job": {
+          "arn": "arn:aws:drs:us-west-2:123456789012:job/drsjob-556c7b1d99221f996",
+          "creationDateTime": "2022-12-07T19:15:38.846723+00:00",
+          "detail": [
+            {
+              "event": "JOB_START",
+              "eventData": {},
+              "logDateTime": "2022-12-07T19:15:39.204086+00:00"
+            },
+            {
+              "event": "SNAPSHOT_START",
+              "eventData": {
+                "sourceServerID": "s-51d6b65c73391918f"
+              },
+              "logDateTime": "2022-12-07T19:15:39.607944+00:00"
+            },
+            {
+              "event": "SNAPSHOT_START",
+              "eventData": {
+                "sourceServerID": "s-5c555d9c008f90131"
+              },
+              "logDateTime": "2022-12-07T19:15:39.633464+00:00"
+            },
+            {
+              "event": "SNAPSHOT_END",
+              "eventData": {
+                "sourceServerID": "s-51d6b65c73391918f"
+              },
+              "logDateTime": "2022-12-07T19:15:39.798428+00:00"
+            },
+            {
+              "event": "SNAPSHOT_END",
+              "eventData": {
+                "sourceServerID": "s-5c555d9c008f90131"
+              },
+              "logDateTime": "2022-12-07T19:15:39.824430+00:00"
+            },
+            {
+              "event": "CONVERSION_START",
+              "eventData": {
+                "sourceServerID": "s-51d6b65c73391918f"
+              },
+              "logDateTime": "2022-12-07T19:16:31.766867+00:00"
+            },
+            {
+              "event": "CONVERSION_START",
+              "eventData": {
+                "sourceServerID": "s-5c555d9c008f90131"
+              },
+              "logDateTime": "2022-12-07T19:16:31.793139+00:00"
+            },
+            {
+              "event": "CONVERSION_END",
+              "eventData": {
+                "conversionServerID": "i-0be3f7e2bca88b868",
+                "sourceServerID": "s-51d6b65c73391918f"
+              },
+              "logDateTime": "2022-12-07T19:19:49.280886+00:00"
+            },
+            {
+              "event": "CONVERSION_END",
+              "eventData": {
+                "conversionServerID": "i-094d84c2798c50971",
+                "sourceServerID": "s-5c555d9c008f90131"
+              },
+              "logDateTime": "2022-12-07T19:19:49.342500+00:00"
+            },
+            {
+              "event": "LAUNCH_START",
+              "eventData": {
+                "sourceServerID": "s-51d6b65c73391918f"
+              },
+              "logDateTime": "2022-12-07T19:19:49.854316+00:00"
+            },
+            {
+              "event": "LAUNCH_START",
+              "eventData": {
+                "sourceServerID": "s-5c555d9c008f90131"
+              },
+              "logDateTime": "2022-12-07T19:19:50.043925+00:00"
+            },
+            {
+              "event": "LAUNCH_END",
+              "eventData": {
+                "sourceServerID": "s-5c555d9c008f90131",
+                "targetInstanceID": "i-0f554975a5cf3245e"
+              },
+              "logDateTime": "2022-12-07T19:24:27.973064+00:00"
+            },
+            {
+              "event": "LAUNCH_END",
+              "eventData": {
+                "sourceServerID": "s-51d6b65c73391918f",
+                "targetInstanceID": "i-04506d5ee9a75c1e7"
+              },
+              "logDateTime": "2022-12-07T19:24:29.374504+00:00"
+            },
+            {
+              "event": "JOB_END",
+              "eventData": {},
+              "logDateTime": "2022-12-07T19:24:32.181827+00:00"
+            }
+          ],
+          "endDateTime": "2022-12-07T19:24:32.155509+00:00",
+          "initiatedBy": "START_DRILL",
+          "jobID": "drsjob-556c7b1d99221f996",
+          "participatingServers": [
+            {
+              "launchStatus": "LAUNCHED",
+              "sourceServerID": "s-51d6b65c73391918f"
+            },
+            {
+              "launchStatus": "LAUNCHED",
+              "sourceServerID": "s-5c555d9c008f90131"
+            }
+          ],
+          "status": "COMPLETED",
+          "tags": {},
+          "type": "LAUNCH"
+        },
+        "status": "completed"
+      },
+      "duration": "9m 50s",
+      "ExecutionEndTime": "2022-12-07T19:24:56.870974+00:00",
+      "ExecutionEndTimeMs": 1670441096871,
+      "ExecutionStartTime": "2022-12-07T19:15:06.806098+00:00",
+      "log": [
+      ],
+      "PostWaveActions": [
+        {
+          "id": "056d109b-0791-4317-85bc-e6cd6edbd80c",
+          "job": {
+            "AutomationExecutionId": "056d109b-0791-4317-85bc-e6cd6edbd80c",
+            "AutomationExecutionStatus": "Success",
+            "AutomationType": "Local",
+            "DocumentName": "CreateOpsItem",
+            "DocumentVersion": "1",
+            "duration": "0m 1s",
+            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation-step-function",
+            "ExecutionEndTime": "2022-12-07 19:24:58.061000+00:00",
+            "ExecutionStartTime": "2022-12-07 19:24:57.211000+00:00",
+            "LogFile": "",
+            "Mode": "Auto",
+            "Outputs": {},
+            "ResolvedTargets": {
+              "ParameterValues": [
+              ],
+              "Truncated": false
+            },
+            "Targets": [
+            ]
+          },
+          "log": [
+          ],
+          "status": "completed"
+        }
+      ],
+      "PreWaveActions": [
+        {
+          "id": "c69d3e99-a544-4f94-95d0-81468a531c2d",
+          "job": {
+            "AutomationExecutionId": "c69d3e99-a544-4f94-95d0-81468a531c2d",
+            "AutomationExecutionStatus": "Success",
+            "AutomationType": "Local",
+            "DocumentName": "CreateOpsItem",
+            "DocumentVersion": "1",
+            "duration": "0m 1s",
+            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation-step-function",
+            "ExecutionEndTime": "2022-12-07 19:15:08.272000+00:00",
+            "ExecutionStartTime": "2022-12-07 19:15:07.375000+00:00",
+            "LogFile": "",
+            "Mode": "Auto",
+            "Outputs": {},
+            "ResolvedTargets": {
+              "ParameterValues": [
+              ],
+              "Truncated": false
+            },
+            "Targets": [
+            ]
+          },
+          "log": [
+          ],
+          "status": "completed"
+        }
+      ],
+      "SourceServers": [
+        "s-51d6b65c73391918f",
+        "s-5c555d9c008f90131"
+      ],
+      "status": "completed"
+    },
+    {
+      "drs": {
+        "job": {
+          "arn": "arn:aws:drs:us-west-2:123456789012:job/drsjob-541cee6300c363be5",
+          "creationDateTime": "2022-12-07T19:25:59.603330+00:00",
+          "detail": [
+            {
+              "event": "JOB_START",
+              "eventData": {},
+              "logDateTime": "2022-12-07T19:25:59.907241+00:00"
+            },
+            {
+              "event": "SNAPSHOT_START",
+              "eventData": {
+                "sourceServerID": "s-5817ab4ccdfa96db3"
+              },
+              "logDateTime": "2022-12-07T19:26:00.311494+00:00"
+            },
+            {
+              "event": "SNAPSHOT_START",
+              "eventData": {
+                "sourceServerID": "s-57e730f6102e1f793"
+              },
+              "logDateTime": "2022-12-07T19:26:00.339092+00:00"
+            },
+            {
+              "event": "SNAPSHOT_END",
+              "eventData": {
+                "sourceServerID": "s-5817ab4ccdfa96db3"
+              },
+              "logDateTime": "2022-12-07T19:26:00.491687+00:00"
+            },
+            {
+              "event": "SNAPSHOT_END",
+              "eventData": {
+                "sourceServerID": "s-57e730f6102e1f793"
+              },
+              "logDateTime": "2022-12-07T19:26:00.518402+00:00"
+            },
+            {
+              "event": "CONVERSION_START",
+              "eventData": {
+                "sourceServerID": "s-5817ab4ccdfa96db3"
+              },
+              "logDateTime": "2022-12-07T19:26:51.696289+00:00"
+            },
+            {
+              "event": "CONVERSION_START",
+              "eventData": {
+                "sourceServerID": "s-57e730f6102e1f793"
+              },
+              "logDateTime": "2022-12-07T19:26:51.724869+00:00"
+            },
+            {
+              "event": "CONVERSION_END",
+              "eventData": {
+                "conversionServerID": "i-00c108e1d59772033",
+                "sourceServerID": "s-5817ab4ccdfa96db3"
+              },
+              "logDateTime": "2022-12-07T19:29:46.395286+00:00"
+            },
+            {
+              "event": "CONVERSION_END",
+              "eventData": {
+                "conversionServerID": "i-092374032299a9608",
+                "sourceServerID": "s-57e730f6102e1f793"
+              },
+              "logDateTime": "2022-12-07T19:29:46.455429+00:00"
+            },
+            {
+              "event": "LAUNCH_START",
+              "eventData": {
+                "sourceServerID": "s-5817ab4ccdfa96db3"
+              },
+              "logDateTime": "2022-12-07T19:29:46.873346+00:00"
+            },
+            {
+              "event": "LAUNCH_START",
+              "eventData": {
+                "sourceServerID": "s-57e730f6102e1f793"
+              },
+              "logDateTime": "2022-12-07T19:29:47.082882+00:00"
+            },
+            {
+              "event": "LAUNCH_END",
+              "eventData": {
+                "sourceServerID": "s-5817ab4ccdfa96db3",
+                "targetInstanceID": "i-0b8104bc29823c261"
+              },
+              "logDateTime": "2022-12-07T19:34:56.742403+00:00"
+            },
+            {
+              "event": "LAUNCH_END",
+              "eventData": {
+                "sourceServerID": "s-57e730f6102e1f793",
+                "targetInstanceID": "i-0a2e943c01bcd45b6"
+              },
+              "logDateTime": "2022-12-07T19:34:56.794507+00:00"
+            },
+            {
+              "event": "JOB_END",
+              "eventData": {},
+              "logDateTime": "2022-12-07T19:34:58.923222+00:00"
+            }
+          ],
+          "endDateTime": "2022-12-07T19:34:58.895953+00:00",
+          "initiatedBy": "START_DRILL",
+          "jobID": "drsjob-541cee6300c363be5",
+          "participatingServers": [
+            {
+              "launchStatus": "LAUNCHED",
+              "sourceServerID": "s-5817ab4ccdfa96db3"
+            },
+            {
+              "launchStatus": "LAUNCHED",
+              "sourceServerID": "s-57e730f6102e1f793"
+            }
+          ],
+          "status": "COMPLETED",
+          "tags": {},
+          "type": "LAUNCH"
+        },
+        "status": "completed"
+      },
+      "duration": "9m 50s",
+      "ExecutionEndTime": "2022-12-07T19:35:18.151009+00:00",
+      "ExecutionEndTimeMs": 1670441718151,
+      "ExecutionStartTime": "2022-12-07T19:25:28.283125+00:00",
+      "log": [
+      ],
+      "PostWaveActions": [
+        {
+          "id": "5f9fa0e1-d6e3-4427-94de-5025f4e5b407",
+          "job": {
+            "AutomationExecutionId": "5f9fa0e1-d6e3-4427-94de-5025f4e5b407",
+            "AutomationExecutionStatus": "Success",
+            "AutomationType": "Local",
+            "DocumentName": "CreateOpsItem",
+            "DocumentVersion": "1",
+            "duration": "0m 1s",
+            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation-step-function",
+            "ExecutionEndTime": "2022-12-07 19:35:19.304000+00:00",
+            "ExecutionStartTime": "2022-12-07 19:35:18.453000+00:00",
+            "LogFile": "",
+            "Mode": "Auto",
+            "Outputs": {},
+            "ResolvedTargets": {
+              "ParameterValues": [
+              ],
+              "Truncated": false
+            },
+            "Targets": [
+            ]
+          },
+          "log": [
+          ],
+          "status": "completed"
+        }
+      ],
+      "PreWaveActions": [
+        {
+          "id": "881d2f15-4e04-4d14-91f7-9ae8a9c2ab83",
+          "job": {
+            "AutomationExecutionId": "881d2f15-4e04-4d14-91f7-9ae8a9c2ab83",
+            "AutomationExecutionStatus": "Success",
+            "AutomationType": "Local",
+            "DocumentName": "CreateOpsItem",
+            "DocumentVersion": "1",
+            "duration": "0m 1s",
+            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation-step-function",
+            "ExecutionEndTime": "2022-12-07 19:25:29.316000+00:00",
+            "ExecutionStartTime": "2022-12-07 19:25:28.442000+00:00",
+            "LogFile": "",
+            "Mode": "Auto",
+            "Outputs": {},
+            "ResolvedTargets": {
+              "ParameterValues": [
+              ],
+              "Truncated": false
+            },
+            "Targets": [
+            ]
+          },
+          "log": [
+          ],
+          "status": "completed"
+        }
+      ],
+      "SourceServers": [
+        "s-5817ab4ccdfa96db3",
+        "s-57e730f6102e1f793"
+      ],
+      "status": "completed"
+    }
+  ]
+}

@@ -8,20 +8,20 @@ Parameters:
   WebServerCount:
     Description: The number of sample EC2 instances tagged as web servers to launch
     Type: Number
-    Default: 2
+    Default: 1
   AppServerCount:
     Description: The number of sample EC2 instances tagged as app servers to launch
     Type: Number
-    Default: 2
+    Default: 1
   DBServerCount:
     Description: The number of sample EC2 instances tagged as DB servers to launch
     Type: Number
-    Default: 2
+    Default: 1
 Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: 10.0.0.0/16
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
@@ -92,7 +92,7 @@ Resources:
     Properties:
       LaunchTemplateName: drs-plan-automation-demo-source-db
       LaunchTemplateData:
-        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2:73}}"
+        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
         BlockDeviceMappings:
           - DeviceName: /dev/xvda
             Ebs:
@@ -118,7 +118,7 @@ Resources:
           - ResourceType: instance
             Tags:
               - Key: Name
-                Value: sample-db-instance
+                Value: sample-dbserver-instance
               - Key: Application
                 Value: sample
               - Key: Role
@@ -132,7 +132,7 @@ Resources:
     Properties:
       LaunchTemplateName: drs-plan-automation-demo-source-web
       LaunchTemplateData:
-        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2:73}}"
+        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
         BlockDeviceMappings:
           - DeviceName: /dev/xvda
             Ebs:
@@ -172,7 +172,7 @@ Resources:
     Properties:
       LaunchTemplateName: drs-plan-automation-demo-source-app
       LaunchTemplateData:
-        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2:73}}"
+        ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
         BlockDeviceMappings:
           - DeviceName: /dev/xvda
             Ebs:

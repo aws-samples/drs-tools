@@ -1,8 +1,8 @@
 {
-  "Parameters" : {
-    "env" : "NONE",
-    "authRoleName" : "drsplangui_auth",
-    "unAuthRoleName" : "drsplangui_unauth",
+  "Parameters": {
+    "env": "NONE",
+    "authRoleName": "drsplangui_auth",
+    "unAuthRoleName": "drsplangui_unauth",
     "identityPoolName": "drsplangui_identitypool",
     "allowUnauthenticatedIdentities": "false",
     "userPoolName": "drsplangui_userpool",
@@ -17,13 +17,13 @@
     "userpoolClientSetAttributes": "false",
     "usernameAttributes": "email",
     "usernameCaseSensitive": "false",
-    "demoEmailAddress": "knizami@gmail.com"
+    "demoEmailAddress": ""
   },
-  "Tags" : {
-    "BusinessUnit" : "Engineering",
-    "CostCenter" : "00000",
-    "Application" : "DRS",
-    "ApplicationOwner" : "someone@example.com",
-    "Environment" : "Development"
+  "Tags": {
+    "BusinessUnit": "Engineering",
+    "CostCenter": "00000",
+    "Application": "DRS",
+    "ApplicationOwner": "someone@example.com",
+    "Environment": "Development"
   }
 }

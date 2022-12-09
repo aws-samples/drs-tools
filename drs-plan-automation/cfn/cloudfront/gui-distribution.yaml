@@ -1,4 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Description: "CloudFront Distribution, with optional WAF and ip filtering"
+Parameters:
+  AllowedCIDRs:
+    Description: Allowed Public CIDRs to DRS interface comma separated list (e.g. "192.0.2.44/32", "192.0.2.0/24", "192.0.0.0/16").  If not specified, WAF will not be created and attached to distribution.
+    Type: String
+Conditions:
+  CreateWAF: !Not [!Equals [!Ref AllowedCIDRs, ""]]
+
+
 Resources:
   s3bucket:
     Type: 'AWS::S3::Bucket'
@@ -62,7 +71,7 @@ Resources:
     Properties:
       DistributionConfig:
         WebACLId:
-          Fn::ImportValue: "drs-plan-automation-waf"
+          !If [CreateWAF, !Ref AllowedCIDRs, !Ref "AWS::NoValue"]
         Origins:
           - DomainName: !GetAtt s3bucket.RegionalDomainName
             Id: myS3Origin
@@ -94,6 +103,82 @@ Resources:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub 'S3 Bucket ${s3bucket}'
 
+  #  drswaf:
+  #    Type: AWS::WAFv2::WebACL
+  #    Properties:
+  #      DefaultAction:
+  #        Block: { }
+  #      Description: WAF for DRS Plan Automation
+  #      Rules:
+  #        - Action:
+  #            Allow: { }
+  #          Name: webacl-allowed-ips
+  #          Priority: 0
+  #          Statement:
+  #            IPSetReferenceStatement:
+  #              Arn: !GetAtt drsallowedips.Arn
+  #          VisibilityConfig:
+  #            CloudWatchMetricsEnabled: False
+  #            MetricName: webacl-allowed-ips
+  #            SampledRequestsEnabled: False
+  #      VisibilityConfig:
+  #        CloudWatchMetricsEnabled: False
+  #        MetricName: webacl
+  #        SampledRequestsEnabled: False
+  #      Scope: CLOUDFRONT
+
+  drswaf:
+    Type: AWS::WAF::WebACL
+    Condition: CreateWAF
+    Properties:
+      DefaultAction:
+        Type: ALLOW
+      Name: WAF for DRS Plan Automation
+      Rules:
+        !If
+        - CreateWAF
+        - Action:
+            Type: ALLOW
+          RuleId: !Ref drsallowedipsrule
+          Priority: 0
+        - !Ref AWS::NoValue
+      MetricName: webacl
+
+  drsallowedipsrule:
+    Condition: CreateWAF
+    Type: AWS::WAF::Rule
+    Properties:
+      MetricName: drsallowedips
+      Name: drsallowedips
+      Predicates:
+        - DataId:  !Ref drsallowedips
+          Negated: false
+          Type: IPMatch
+
+  drsallowedips:
+    Condition: CreateWAF
+    Type: AWS::WAF::IPSet
+    Properties:
+      Name: Allowed CIDRs for DRS Plan Automation frontend web interface
+      IPSetDescriptors:
+        - Type: IPV4
+          Value: !Ref AllowedCIDRs
+
+#  drsallowedips:
+#    Type: AWS::WAFv2::IPSet
+#    Properties:
+#      Addresses:
+#        - Ref: AllowedCIDRs
+#      Description: Allowed CIDRs for DRS Plan Automation frontend web interface
+#      IPAddressVersion: IPV4
+#      Scope: CLOUDFRONT
+
+
+#      Tags:
+#        - Tag
+
+
+
 Outputs:
   DRSDistributionS3BucketName:
     Value: !Ref s3bucket
@@ -121,3 +206,10 @@ Outputs:
     Description: "S3 Logging Bucket Arn for Plan Automation Distribution"
     Export:
       Name: "drs-distribution-s3-logging-bucket-arn"
+
+  drswafarn:
+    Condition: CreateWAF
+    Value: !Ref drswaf
+    Description: "WAF for DRS CloudFront Distribution"
+    Export:
+      Name: "drs-plan-automation-waf"

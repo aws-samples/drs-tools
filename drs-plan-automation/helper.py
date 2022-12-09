@@ -87,6 +87,39 @@ def deploy_cfn(name, cfn, params, tags, creds, region):
         raise
 
 
+def put_item(table, file, assumed_credentials, region):
+    try:
+        with open(file, 'r') as json_doc:
+            json_doc_string = json_doc.read()
+            logger.debug("JSON file contents are: {}".format(json_doc_string))
+            json_doc_object = json.loads(json_doc_string)
+            logger.debug("Loaded JSON from file: {}".format(json_doc_object))
+
+        if json_doc_object:
+            dynamodb = boto3_resource('dynamodb', assumed_credentials, region)
+            dynamodb_table = dynamodb.Table(table)
+            dynamodb_table.put_item(
+                Item=json_doc_object
+            )
+            logger.info("inserted sample application item into DynamoDB table: {}".format(table))
+    except Exception as e:
+        logger.error('Failure putting object {} in table {}: {}'.format(object, table, e))
+        raise
+
+
+def delete_item(table, item_key, assumed_credentials, region):
+    try:
+        dynamodb = boto3_resource('dynamodb', assumed_credentials, region)
+        dynamodb_table = dynamodb.Table(table)
+        dynamodb_table.delete_item(
+            Key=item_key
+        )
+        logger.info("Deleted sample application item from DynamoDB table: {}".format(table))
+    except Exception as e:
+        logger.error('Failure deleting object with key {} in table {}: {}'.format(item_key, table, e))
+        raise
+
+
 def create_stack(stack, template, parameters, tags, assumed_credentials, region):
     """Starts a new CloudFormation stack creation
 
@@ -314,6 +347,9 @@ def empty_s3_bucket(bucket, creds, region):
                 if 'Deleted' in item:
                     logger.info("deleted {} object versions in bucket {}".format(len(item['Deleted']), bucket))
     except Exception as e:
+        if 'NoSuchBucket' in str(e):
+            logger.info("Bucket {} doesn't exist, skipping".format(bucket))
+            return False
         # If any other exceptions which we didn't expect are raised
         # then fail and log the exception message.
         logger.error('Failure emptying bucket {}: {}'.format(bucket, e))
@@ -339,9 +375,9 @@ def get_vpc_cidr(vpcid, assumed_credentials):
         raise
 
 
-def get_stack_output(stack, output_key, assumed_credentials):
+def get_stack_output(stack, output_key, assumed_credentials, region):
     try:
-        cf = boto3_client('cloudformation', assumed_credentials)
+        cf = boto3_client('cloudformation', assumed_credentials, region)
 
         response = cf.describe_stacks(
             StackName=stack
@@ -410,7 +446,7 @@ def get_stack_export(stack, export_name, assumed_credentials, region):
     return False
 
 
-def create_parameter_file(filename, json_params):
+def update_parameter_file(filename, json_params):
     file_path = os.path.join(CFN_FILE_DIR, filename)
     param_doc_string = None
     with open(file_path, 'r') as param_read_doc:
@@ -421,13 +457,13 @@ def create_parameter_file(filename, json_params):
     if param_doc_string:
         param_doc_json = json.loads(param_doc_string)
 
-    logger.debug("Loaded JSON from file: {}".format(param_doc_json))
+    logger.info("Loaded JSON from file: {}".format(param_doc_json))
 
     with open(file_path, 'w') as param_write_doc:
         for key in json_params.keys():
-            param_doc_json[key] = json_params[key]
+            param_doc_json['Parameters'][key] = json_params[key]
         param_write_doc.write(json.dumps(param_doc_json))
-        logger.debug("Wrote file {} with json: {}".format(filename, param_doc_json))
+        logger.info("Wrote file {} with json: {}".format(filename, param_doc_json))
 
 
 def create_document(name, file, tags, assumed_credentials):
@@ -474,7 +510,7 @@ def create_document(name, file, tags, assumed_credentials):
 
 
 def cleanup_stack(stack_name, creds, region):
-    stack_id = does_stack_exist(stack_name, creds)
+    stack_id = does_stack_exist(stack_name, creds, region)
     if stack_id:
         logger.info("Deleting Stack: {}".format(stack_id))
         delete_stack(stack_id, creds, region)

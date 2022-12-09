@@ -9,7 +9,6 @@ import helper
 import shutil
 import subprocess
 
-
 log_level = os.getenv("LOGLEVEL", "INFO")
 level = logging.getLevelName(log_level)
 
@@ -27,7 +26,6 @@ logger.addHandler(ch)
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID", False)
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY", False)
 aws_session_token = os.getenv("AWS_SESSION_TOKEN", False)
-region = os.getenv("AWS_DEFAULT_REGION", False)
 
 creds = {
     'AccessKeyId': aws_access_key_id,
@@ -49,22 +47,30 @@ if not aws_session_token:
     logger.warning("The environment variable \"{}\" is not set for your account credentials".format(
         "AWS_SESSION_TOKEN"))
     hard_stop = True
-if not region:
-    logger.warning("The environment variable \"{}\" is not set".format(
-        "AWS_DEFAULT_REGION"))
-    hard_stop = True
 
 if hard_stop:
     exit(1)
 
 solution_prefix = "drs-plan-automation"
 
+
 @click.command()
-@click.option("--prefix", required=False, default=None, help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
-@click.option("--environment", required=False, default=None, help="The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'")
-@click.option('--cleanup', required=False, is_flag=True, help="Cleanup the deployed stacks and AWS resources.  If you deployed with the --prefix or --environment option, then you must cleanup with the same option parameters")
-@click.option('--prompt', required=False, is_flag=True, help="Whether to prompt and require you to press enter after each stack is deployed.")
-def deploy(prefix, environment, prompt, cleanup):
+@click.option("--allowed-cidrs", required=False, default="",
+              help="The allowed IP address CIDRs that have access to the cloudfront hosted front end interface.  Login is still required even if you have network access. Specify 0.0.0.0/0 to allow all ip addresses with access to front end user interface.")
+@click.option("--user-email", required=True, default=None,
+              help="The email address for the cognito user for the solution.  A new temporary password will be sent to this user to login to the solution")
+@click.option("--solution-region", required=True, default=None,
+              help="The region where the plan automation solution should be deployed.  This should be the same as the target DRS region")
+@click.option("--prefix", required=False, default=None,
+              help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
+@click.option("--environment", required=False, default=None,
+              help="The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'")
+@click.option('--cleanup', required=False, is_flag=True,
+              help="Cleanup the deployed stacks and AWS resources.  If you deployed with the --prefix or --environment option, then you must cleanup with the same option parameters")
+@click.option('--prompt', required=False, is_flag=True,
+              help="Whether to prompt and require you to press enter after each stack is deployed.")
+def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solution_region):
+    region = solution_region
     try:
         account_number, user_id = helper.get_credential_info(creds, region)
         if account_number and user_id:
@@ -88,29 +94,29 @@ def deploy(prefix, environment, prompt, cleanup):
     codecommit_stack_template = "codecommit/codecommit.yaml"
 
     planautomation_codebuild_validatetemplates_stack_name = helper.get_name(solution_prefix,
-                                                                            "codebuild-validatetemplates", prefix, environment)
+                                                                            "codebuild-validatetemplates", prefix,
+                                                                            environment)
     planautomation_codebuild_validatetemplates_stack_template = "codebuild/ValidateTemplates/validatetemplates.yaml"
 
     planautomation_codebuild_buildanddeploylambda_stack_name = helper.get_name(solution_prefix,
-                                                                              "codebuild-buildanddeploylambda", prefix, environment)
+                                                                               "codebuild-buildanddeploylambda", prefix,
+                                                                               environment)
     planautomation_codebuild_buildanddeploylambda_stack_template = "codebuild/BuildAndDeployLambda/buildanddeploylambda.yaml"
 
     planautomation_codebuild_buildanddeploylambdaapi_stack_name = helper.get_name(solution_prefix,
-                                                                               "codebuild-buildanddeploylambdaapi", prefix, environment)
+                                                                                  "codebuild-buildanddeploylambdaapi",
+                                                                                  prefix, environment)
     planautomation_codebuild_buildanddeploylambdaapi_stack_template = "codebuild/BuildAndDeployLambdaApi/buildanddeploylambda.yaml"
 
-
     planautomation_codebuild_buildanddeployfrontend_stack_name = helper.get_name(solution_prefix,
-                                                                                 "codebuild-buildanddeployfrontend", prefix, environment)
+                                                                                 "codebuild-buildanddeployfrontend",
+                                                                                 prefix, environment)
 
     planautomation_codebuild_buildanddeployfrontend_stack_template = "codebuild/BuildAndDeployFrontEnd/buildanddeployfrontend.yaml"
 
     planautomation_iam_cloudformationrole_stack_name = helper.get_name(solution_prefix,
                                                                        "iam-cloudformationrole")
     planautomation_iam_cloudformationrole_stack_template = "iam/cloudformationrole.yaml"
-
-    planautomation_ssm_createopsitem_stack_name = helper.get_name(solution_prefix, "ssm-createopsitem")
-    planautomation_ssm_createopsitem_stack_template = "ssm/createopsitem.yaml"
 
     planautomation_sns_stack_name = helper.get_name(solution_prefix, "sns-notifications")
     planautomation_sns_stack_template = "sns/notifications.yaml"
@@ -137,15 +143,17 @@ def deploy(prefix, environment, prompt, cleanup):
         if 'yes' in response:
 
             # Stacks created by codepipeline
-            s3_distribution_bucket_name = helper.get_stack_export(planautomation_distribution_stack_name, s3_distribution_bucket_name_export, creds, region)
+            s3_distribution_bucket_name = helper.get_stack_export(planautomation_distribution_stack_name,
+                                                                  s3_distribution_bucket_name_export, creds, region)
             logger.info("Distribution bucket is: {}".format(s3_distribution_bucket_name))
-            s3_logging_bucket_name = helper.get_stack_export(planautomation_distribution_stack_name, s3_distribution_logging_bucket_name_export, creds, region)
+            s3_logging_bucket_name = helper.get_stack_export(planautomation_distribution_stack_name,
+                                                             s3_distribution_logging_bucket_name_export, creds, region)
             logger.info("Distribution logging bucket is: {}".format(s3_logging_bucket_name))
 
-            if s3_logging_bucket_name:
-                helper.empty_s3_bucket(s3_logging_bucket_name, creds, region)
             if s3_distribution_bucket_name:
                 helper.empty_s3_bucket(s3_distribution_bucket_name, creds, region)
+            if s3_logging_bucket_name:
+                helper.empty_s3_bucket(s3_logging_bucket_name, creds, region)
 
             helper.cleanup_stack(planautomation_distribution_stack_name, creds, region)
             helper.cleanup_stack(planautomation_waf_stack_name, creds, region)
@@ -158,7 +166,6 @@ def deploy(prefix, environment, prompt, cleanup):
             # stacks created by deploy.py
             helper.cleanup_stack(planautomation_codepipeline_stack_name, creds, region)
             helper.cleanup_stack(planautomation_sns_stack_name, creds, region)
-            helper.cleanup_stack(planautomation_ssm_createopsitem_stack_name, creds, region)
             helper.cleanup_stack(planautomation_codebuild_buildanddeploylambda_stack_name, creds, region)
             helper.cleanup_stack(planautomation_codebuild_buildanddeploylambdaapi_stack_name, creds, region)
             helper.cleanup_stack(planautomation_codebuild_validatetemplates_stack_name, creds, region)
@@ -180,7 +187,8 @@ def deploy(prefix, environment, prompt, cleanup):
         exit(0)
 
     logger.info(
-        "\nOptions:\nPrefix: {}\nEnvironment Specified: {}\nPrompted Deployment: {}\n".format(
+        "\nOptions:\nRegion: {}\nPrefix: {}\nEnvironment Specified: {}\nPrompted Deployment: {}\n".format(
+            region,
             prefix,
             environment,
             prompt
@@ -209,19 +217,23 @@ def deploy(prefix, environment, prompt, cleanup):
     helper.process_stack(prompt, planautomation_iam_cloudformationrole_stack_name,
                          planautomation_iam_cloudformationrole_stack_template, None, creds, region)
 
-    helper.process_stack(prompt, planautomation_ssm_createopsitem_stack_name,
-                         planautomation_ssm_createopsitem_stack_template, None, creds, region)
-
     helper.process_stack(prompt, planautomation_sns_stack_name,
                          planautomation_sns_stack_template, None, creds, region)
 
-    codepipeline_param_file = {
-        'Parameters': {
-            'CodePipelineStackName': planautomation_codepipeline_stack_name
-        }
+    codepipeline_params = {
+        'CodePipelineStackName': planautomation_codepipeline_stack_name
     }
+    helper.update_parameter_file('codepipeline/codepipeline.json', codepipeline_params)
 
-    helper.create_parameter_file('codepipeline/codepipeline.json', codepipeline_param_file)
+    cognito_params = {
+        'demoEmailAddress': user_email
+    }
+    helper.update_parameter_file('cognito/gui-auth.json', cognito_params)
+
+    cf_params = {
+        'AllowedCIDRs': allowed_cidrs
+    }
+    helper.update_parameter_file('cloudfront/gui-distribution.json', cf_params)
 
     logger.info("Zipping code for CodeCommit baseline")
     if prompt:
@@ -265,7 +277,13 @@ def deploy(prefix, environment, prompt, cleanup):
     helper.process_stack(prompt, planautomation_codepipeline_stack_name,
                          planautomation_codepipeline_stack_template, params, creds, region)
 
-    logger.info("Deployment Completed")
+    logger.info("Deployment Completed\n."
+                "A CodeCommit repository has been created with the solution configured based on your choices: https://{}.console.aws.amazon.com/codesuite/codecommit/repositories/drs-plan-automation/browse?region={}\n".format(region, region))
+
+    logger.info("A CodePipeline has been created and linked to your CodeCommit repository:  https://{}.console.aws.amazon.com/codesuite/codepipeline/pipelines/drs-plan-automation/view?region={}\n".format(region, region))
+    logger.info("Once CodePipeline completes execution, your solution will be ready for use.\n"
+                "Your solution will be accessible from the CloudFront distribution deployed by CodePipeline.\n"
+                "CloudFront Console: https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region={}#/distributions\n".format(region))
 
 
 if __name__ == "__main__":
