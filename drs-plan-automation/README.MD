@@ -168,30 +168,30 @@ Data is stored in JSON format in DynamoDB.  There are two DynamoDB tables used b
           The maximum amount of time to wait for this wave to complete before it is considered a failure.
         * **PreWaveActions** _(array)_ --
           An array of 0 or more PreWave Actions to execute before initiating the DRS job for the wave.
-        * A PreWave Action Object describing it and defining the SSM Automation document and parameters
-          * **Name** _(string)_ --
-            The user provided name for the PreWave action.
-          * **Description** _(string)_ --
-            The user provided description for the PreWave action.
-          * **MaxWaitTime** _(number)_ --
-            The maximum amount of time to wait for this wave to complete before it is considered a failure.
-          * **UpdateTime** _(number)_ --
-            The amount of time to wait before updating the results for this action.
-          * **StartAutomationExecution** _(object)_ --
-            The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
+          * A PreWave Action Object describing it and defining the SSM Automation document and parameters
+            * **Name** _(string)_ --
+              The user provided name for the PreWave action.
+            * **Description** _(string)_ --
+              The user provided description for the PreWave action.
+            * **MaxWaitTime** _(number)_ --
+              The maximum amount of time to wait for this wave to complete before it is considered a failure.
+            * **UpdateTime** _(number)_ --
+              The amount of time to wait before updating the results for this action.
+            * **StartAutomationExecution** _(object)_ --
+              The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
         * **PostWaveActions** _(array)_ --
           An array of 0 or more PostWave Actions to execute after completing the DRS job for the wave.
-        * A PostWave Action Object describing it and defining the SSM Automation document and parameters
-          * **Name** _(string)_ --
-            The user provided name for the PostWave action.
-          * **Description** _(string)_ --
-            The user provided description for the PostWave action.
-          * **MaxWaitTime** _(number)_ --
-            The maximum amount of time to wait for this wave to complete before it is considered a failure.
-          * **UpdateTime** _(number)_ --
-            The amount of time to wait before updating the results for this action.
-          * **StartAutomationExecution** _(object)_ --
-            The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
+          * A PostWave Action Object describing it and defining the SSM Automation document and parameters
+            * **Name** _(string)_ --
+              The user provided name for the PostWave action.
+            * **Description** _(string)_ --
+              The user provided description for the PostWave action.
+            * **MaxWaitTime** _(number)_ --
+              The maximum amount of time to wait for this wave to complete before it is considered a failure.
+            * **UpdateTime** _(number)_ --
+              The amount of time to wait before updating the results for this action.
+            * **StartAutomationExecution** _(object)_ --
+              The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
 
 ### drs-plan-automation-results
 This table stores the results from a plan automation execution.  
