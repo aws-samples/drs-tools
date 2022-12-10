@@ -1,3 +1,6 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import boto3
 import logging
 from botocore.exceptions import ClientError
@@ -391,6 +394,7 @@ def handler(event, context):
         user = event.get('user')
         logger.info("IsDrill is: {}".format(isdrill))
 
+        #TODO:  Consider server side validation of form input.
         result = event.get('result', {
             'AppId_PlanId': "{}_{}".format(application_details["AppId"], plan_details["PlanId"]),
             'planDetails': plan_details,
@@ -402,7 +406,7 @@ def handler(event, context):
             'AppName': application["AppName"],
             "KeyName": application["KeyName"],
             "KeyValue": application["KeyValue"],
-            "Owner": application["Owner"],
+            "Owner": application.get("Owner", ""),
             'log': [],
             'SourceServers': [],
             'ExecutionStartTime': datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f%z"),

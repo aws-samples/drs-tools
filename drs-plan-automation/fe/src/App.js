@@ -1,3 +1,6 @@
+//Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+//SPDX-License-Identifier: Apache-2.0
+
 import React, {useEffect, useState} from 'react'
 import {Authenticator, Heading, useAuthenticator, View} from '@aws-amplify/ui-react';
 import { Text, useTheme } from '@aws-amplify/ui-react';

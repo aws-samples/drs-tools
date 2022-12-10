@@ -1,9 +1,11 @@
 {
-  "AppId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d_9b1deb4d",
+  "AppId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "AppName": "Sample Application",
   "Description": "Sample application aligned with sample EC2 environment provided with solution",
   "KeyName": "Application",
   "KeyValue": "sample",
+  "Owner": "myemail@example.com",
+  "SnsTopic": "",
   "Plans": [
     {
       "CreationDate": "1200",
@@ -12,7 +14,7 @@
       "LastModifiedDate": "1200",
       "Owner": "myemail@example.com",
       "PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
-      "PlanName": "Default",
+      "PlanName": "Sample Plan",
       "RPO": "60",
       "RTO": "1200",
       "Waves": [

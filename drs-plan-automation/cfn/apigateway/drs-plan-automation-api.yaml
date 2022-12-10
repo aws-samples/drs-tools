@@ -1,4 +1,6 @@
----
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 Description: API Gateway Resource for AWS Amplify CLI
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
