@@ -502,6 +502,6 @@ If you deployed the sample application with the [deploy_sample.py](./deploy_samp
 
 ## Troubleshooting
 
-### I can't 
-
+* ### I am getting a 403 error when trying to access the CloudFront distribution
+  Make sure your ip address is within the IP address range for the CIDR block you specified when you deployed the solution with the `--allowed-cidrs` option.
 
