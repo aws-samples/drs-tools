@@ -131,67 +131,67 @@ Data is stored in JSON format in DynamoDB.  There are two DynamoDB tables used b
 * **Plans** _(array)_ --
   An array of 0 or more plans for the application
   * <a id="planobject"></a>
-    **PlanId** _(string)_ --
-    A system generated uuid that uniquely identifies each plan.
-    **Name** _(string)_ --
-    The user provided name for the plan
-    **Description** _(string)_ --
-    The user provided description for the plan.
-    **KeyName** _(string)_ --
-    The Tag Key name that uniquely identifies DRS source servers that are a part of this plan.
-    **KeyValue** _(string)_ --
-    The Tag Key value that uniquely identifies DRS source servers that are a part of this plan.
-    **Owner** _(string)_ --
-    The email address for the owner of this application.
-    **RPO** _(number)_ --
-    The user defined recovery point objective for this plan.
-    **RTO** _(number)_ --
-    The user defined recovery time objective for this plan.
-    **CreationDate** _(number)_ --
-    The creation date for this plan, in epoch format.
-    **LastModifiedDate** _(number)_ --
-    The last modified date for this plan, in epoch format.
-    **LastExecutedDate** _(number)_ --
-    The last execution date for this plan, in epoch format.
-    **Waves** _(array)_ --
-    An array of 0 or more waves for the plan
-    * 
-      **Name** _(string)_ --
-      The user provided name for the wave.
-      **Description** _(string)_ --
-      The user provided description for the wave.
-      **KeyName** _(string)_ --
-      The Tag Key name that uniquely identifies DRS source servers that are a part of this wave.
-      **KeyValue** _(string)_ --
-      The Tag Key value that uniquely identifies DRS source servers that are a part of this wave.
-      **MaxWaitTime** _(number)_ --
-      The maximum amount of time to wait for this wave to complete before it is considered a failure.
-      **PreWaveActions** _(array)_ --
-      An array of 0 or more PreWave Actions to execute before initiating the DRS job for the wave.
-      * 
-        **Name** _(string)_ --
-        The user provided name for the PreWave action.
-        **Description** _(string)_ --
-        The user provided description for the PreWave action.
-        **MaxWaitTime** _(number)_ --
-        The maximum amount of time to wait for this wave to complete before it is considered a failure.
-        **UpdateTime** _(number)_ --
-        The amount of time to wait before updating the results for this action.
-        **StartAutomationExecution** _(object)_ --
-        The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
-    **PostWaveActions** _(array)_ --
-    An array of 0 or more PostWave Actions to execute after completing the DRS job for the wave.
-    *
-      **Name** _(string)_ --
-      The user provided name for the PostWave action.
-      **Description** _(string)_ --
-      The user provided description for the PostWave action.
-      **MaxWaitTime** _(number)_ --
-      The maximum amount of time to wait for this wave to complete before it is considered a failure.
-      **UpdateTime** _(number)_ --
-      The amount of time to wait before updating the results for this action.
-      **StartAutomationExecution** _(object)_ --
-      The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
+    * **PlanId** _(string)_ --
+      A system generated uuid that uniquely identifies each plan.
+    * **Name** _(string)_ --
+      The user provided name for the plan
+    * **Description** _(string)_ --
+      The user provided description for the plan.
+    * **KeyName** _(string)_ --
+      The Tag Key name that uniquely identifies DRS source servers that are a part of this plan.
+    * **KeyValue** _(string)_ --
+      The Tag Key value that uniquely identifies DRS source servers that are a part of this plan.
+    * **Owner** _(string)_ --
+      The email address for the owner of this application.
+    * **RPO** _(number)_ --
+      The user defined recovery point objective for this plan.
+    * **RTO** _(number)_ --
+      The user defined recovery time objective for this plan.
+    * **CreationDate** _(number)_ --
+      The creation date for this plan, in epoch format.
+    * **LastModifiedDate** _(number)_ --
+      The last modified date for this plan, in epoch format.
+    * **LastExecutedDate** _(number)_ --
+      The last execution date for this plan, in epoch format.
+    * **Waves** _(array)_ --
+      An array of 0 or more waves for the plan
+      * A Wave Object defining its PreWave Automations, PostWave Automations, and DRS source servers selection by tag.
+        * **Name** _(string)_ --
+          The user provided name for the wave.
+        * **Description** _(string)_ --
+          The user provided description for the wave.
+        * **KeyName** _(string)_ --
+          The Tag Key name that uniquely identifies DRS source servers that are a part of this wave.
+        * **KeyValue** _(string)_ --
+          The Tag Key value that uniquely identifies DRS source servers that are a part of this wave.
+        * **MaxWaitTime** _(number)_ --
+          The maximum amount of time to wait for this wave to complete before it is considered a failure.
+        * **PreWaveActions** _(array)_ --
+          An array of 0 or more PreWave Actions to execute before initiating the DRS job for the wave.
+        *
+          * **Name** _(string)_ --
+            The user provided name for the PreWave action.
+          * **Description** _(string)_ --
+            The user provided description for the PreWave action.
+          * **MaxWaitTime** _(number)_ --
+            The maximum amount of time to wait for this wave to complete before it is considered a failure.
+          * **UpdateTime** _(number)_ --
+            The amount of time to wait before updating the results for this action.
+          * **StartAutomationExecution** _(object)_ --
+            The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
+        * **PostWaveActions** _(array)_ --
+          An array of 0 or more PostWave Actions to execute after completing the DRS job for the wave.
+        *
+          * **Name** _(string)_ --
+            The user provided name for the PostWave action.
+          * **Description** _(string)_ --
+            The user provided description for the PostWave action.
+          * **MaxWaitTime** _(number)_ --
+            The maximum amount of time to wait for this wave to complete before it is considered a failure.
+          * **UpdateTime** _(number)_ --
+            The amount of time to wait before updating the results for this action.
+          * **StartAutomationExecution** _(object)_ --
+            The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
 
 ### drs-plan-automation-results
 This table stores the results from a plan automation execution.  
