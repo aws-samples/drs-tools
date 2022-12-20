@@ -35,7 +35,7 @@ In a multi account scenario, you have deployed the DRS service into a separate A
 
 Configuration is accomplished via AWS environment variables.  These are set when the [drs_synch_ec2_tags_and_instance_type_lambda.yaml](drs_synch_ec2_tags_and_instance_type_lambda.yaml) AWS Lambda function is deployed via the parameter options presented by the CloudFormation template:
 
-* **DRS_ASSUME_ROLE_NAME**: The name of the AWS IAM role that the synch_source_server_tags AWS Lambda function assumes in the DRS account.  This role grants the AWS lambda function rights to describe the DRS source servers and update the tags.   
+* **DRS_ASSUME_ROLE_NAME**: The name of the AWS IAM role that the drs_synch_ec2_tags_and_instance_type AWS Lambda function assumes in the DRS account.  This role grants the AWS lambda function rights to describe the DRS source servers and update the tags.   
 * **DRS_ACCOUNT_NUMBER**: The AWS account ID where the DRS service is configured and replicating EC2 instances.
 * **DRS_REGION**:  The AWS Region where the DRS service is configured and replicating EC2 instances.
 * **SOURCE_ACCOUNT**:   The AWS account ID containing the source EC2 instances that are being replicated to DRS.  You should not need to update this value, it is automatically identified by CloudFormation as the account where the lambda function is deployed.
@@ -58,7 +58,7 @@ The CloudWatch event rate based rule created from [drs_synch_ec2_tags_and_instan
 
 Deploy the provided [drs_synch_ec2_tags_and_instance_type](drs_synch_ec2_tags_and_instance_type_role.yaml) role to your account in a region of your choice (e.g. us-east-1).  Specify your AWS account number for parameter **SourceAccountNumber**.  Leave the parameter **OrganizationID** blank, it is used in multi-account scenarios.  Next, deploy the [drs_synch_ec2_tags_and_instance_type_lambda.yaml](drs_synch_ec2_tags_and_instance_type_lambda.yaml) AWS Lambda function into a region of your choice (e.g. us-east-1) in your account.  The Lambda function only needs to be deployed once in order to support multiple regions within an AWS account.
 
-1. Deploy the **drs_synch_ec2_tags_and_instance_type** role into your AWS DRS Account in a region of your choice.  This role is assumed by the **synch_source_server_tags** Lambda function to update the tags on DRS source servers.
+1. Deploy the **drs_synch_ec2_tags_and_instance_type** role into your AWS DRS Account in a region of your choice.  This role is assumed by the **drs_synch_ec2_tags_and_instance_type** Lambda function to update the tags on DRS source servers.
     Specify your account number for the **SourceAccountNumber** parameter. 
 
 ```shell
@@ -97,7 +97,7 @@ aws cloudformation create-stack --stack-name drs-synch-ec2-tags-and-instance-typ
 --region <enter the region where the stack should be deployed, e.g. "us-east-1">
 ```
 
-2. Deploy the **synch_source_server_tags** Lambda function into **each AWS account** containing EC2 instances that are replicating to DRS.  Specify the account number where DRS is configured for the **DrsAccountNumber** parameter.  Specify the region where the DRS service is configured for the **DrsRegion** parameter.  Specify the region(s) containing the EC2 instances that are replicating to DRS as a comma separated list for parameter **SourceRegions**.
+2. Deploy the **drs_synch_ec2_tags_and_instance_type** Lambda function into **each AWS account** containing EC2 instances that are replicating to DRS.  Specify the account number where DRS is configured for the **DrsAccountNumber** parameter.  Specify the region where the DRS service is configured for the **DrsRegion** parameter.  Specify the region(s) containing the EC2 instances that are replicating to DRS as a comma separated list for parameter **SourceRegions**.
 
 ```shell
 aws cloudformation create-stack --stack-name drs-synch-ec2-tags-and-instance-type \

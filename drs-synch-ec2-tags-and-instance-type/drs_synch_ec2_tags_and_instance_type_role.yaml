@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Create role allowing the synch_source_server_tags AWS lambda function to update tags on DRS source servers with tags from associated EC2 instances
+Description: Create role allowing the drs_synch_ec2_tags_and_instance_type AWS lambda function to update tags on DRS source servers with tags from associated EC2 instances
 Parameters:
   OrganizationID:
     Description: The AWS Organizations ID within which the DRS service and synch_soure_server_tags AWS Lambda function is running.  Specify if using AWS Organizations.

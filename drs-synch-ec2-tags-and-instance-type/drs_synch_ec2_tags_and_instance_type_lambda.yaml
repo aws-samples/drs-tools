@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Template to create the synch_source_server_tags AWS Lambda function.  The lambda function synchronizes tags from EC2 instances running in the region with their corresponding AWS Elastic Disaster Recovery service (DRS) source servers.  It also updates the DRS source server launch template instance type to correspond to the original EC2 instance type.
+Description: Template to create the drs_synch_ec2_tags_and_instance_type AWS Lambda function.  The lambda function synchronizes tags from EC2 instances running in the region with their corresponding AWS Elastic Disaster Recovery service (DRS) source servers.  It also updates the DRS source server launch template instance type to correspond to the original EC2 instance type.
 Parameters:
   RateString:
     Description: The rate at which to synchronize tags, see https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions for valid values
@@ -306,7 +306,7 @@ Resources:
   lambdarole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: "synch_source_server_tags_lambda"
+      RoleName: "drs_synch_ec2_tags_and_instance_type_lambda"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
