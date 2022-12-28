@@ -5,7 +5,7 @@
   "KeyName": "Application",
   "KeyValue": "sample",
   "Owner": "myemail@example.com",
-  "Account": "012345678912",
+  "AccountId": "012345678912",
   "Region": "us-west-2",
   "SnsTopic": "",
   "Plans": [
