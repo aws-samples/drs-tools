@@ -54,6 +54,8 @@ Resources:
             Ref: env
           DRS_STATE_MACHINE_ARN:
             Fn::ImportValue: "drs-plan-automation-state-machine-arn"
+          DRS_ACCOUNTS_TABLE_NAME:
+            Fn::ImportValue: "drs-plan-automation-accounts-table-name"
           DRS_TABLE_NAME:
             Fn::ImportValue: "drs-plan-automation-applications-table-name"
           DRS_EXECUTION_TABLE_NAME:
@@ -124,6 +126,11 @@ Resources:
               - dynamodb:UpdateItem
               - dynamodb:DeleteItem
             Resource:
+              - Fn::ImportValue: "drs-plan-automation-accounts-table-arn"
+              - Fn::Join:
+                  - "/"
+                  - - Fn::ImportValue: "drs-plan-automation-accounts-table-arn"
+                    - index/*
               - Fn::ImportValue: "drs-plan-automation-applications-table-arn"
               - Fn::Join:
                   - "/"

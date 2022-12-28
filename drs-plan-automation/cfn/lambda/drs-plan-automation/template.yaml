@@ -17,23 +17,37 @@ Parameters:
     Description: Memory to allocate to Lambda function
     Type: Number
     Default: 128
+  env:
+    Type: String
+    Default:  NONE
+  DrsAssumeRoleName:
+    Description: The name of the AWS IAM role in DRS accounts allowing the solution to perform AWS operations in the account (e.g. DRS recovery, SSM Automation initiation)
+    Type: String
+    Default: "drs_plan_automation_account_role"
+
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+      - Ref: env
+      - NONE
 
 
 Resources:
   DRSPlanAutomationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      FunctionName: "drs-plan-automation-step-function"
+      FunctionName: "drs-plan-automation"
       CodeUri: src/
       Handler: drs_automation_plan.handler
       Runtime: python3.9
       Architectures:
         - x86_64
-      Role: !GetAtt DRSPlanAutomationLambdaRole.Arn
+      Role: !GetAtt DRSPlanAutomationFunctionRole.Arn
       MemorySize: !Ref Memory
       Timeout: 600
       Environment:
         Variables:
+          DRS_ASSUME_ROLE_NAME: !Ref DrsAssumeRoleName
           DRS_APPLICATION_TABLE_NAME:
             Fn::ImportValue: "drs-plan-automation-applications-table-name"
           DRS_RESULTS_TABLE_NAME:
@@ -44,7 +58,7 @@ Resources:
   DRSPlanAutomationStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !GetAtt DRSPlanAutomationLambdaRole.Arn
+      RoleArn: !GetAtt DRSPlanAutomationStateMachineRole.Arn
       Definition:
         Comment: Automate the restoration of DRS source servers based on provided order and
           wait times.
@@ -226,8 +240,69 @@ Resources:
             End: true
 
 
+  DRSPlanAutomationFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - drs-plan-automation_lambda
+          - Fn::Join:
+              - ''
+              - - drs-plan-automation_lambda
+                - "-"
+                - Ref: env
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
 
-  DRSPlanAutomationLambdaRole:
+  LambdaExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: lambda-execution-policy
+      Roles:
+        - Ref: DRSPlanAutomationFunctionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Resource:
+              - !Sub "arn:aws:iam::*:role/${DrsAssumeRoleName}"
+          - Sid: LogOutput
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              Fn::Sub:
+                - arn:aws:logs:${region}:${account}:log-group:/aws/lambda/${lambda}:log-stream:*
+                - region:
+                    Ref: AWS::Region
+                  account:
+                    Ref: AWS::AccountId
+                  lambda:
+                    Ref: DRSPlanAutomationFunction
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource:
+              - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+              - Fn::Join:
+                  - "/"
+                  - - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+                    - index/*
+
+
+  DRSPlanAutomationStateMachineRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -236,33 +311,20 @@ Resources:
           - Effect: Allow
             Principal:
               Service:
-                - lambda.amazonaws.com
                 - states.amazonaws.com
             Action:
               - sts:AssumeRole
       Path: "/"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSElasticDisasterRecoveryConsoleFullAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
       Policies:
-        - PolicyName:  DRSSolutionRecoveryPlanPermissions
+        - PolicyName:  InvokeDRSPlanAutomationFunction
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - sns:Publish
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - ssm:*
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - dynamodb:*
-                Resource:
-                  Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+                  - lambda:InvokeFunction
+                Resource: !GetAtt DRSPlanAutomationFunction.Arn
+
 
 
 Outputs:

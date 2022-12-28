@@ -1,19 +1,18 @@
 //Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //SPDX-License-Identifier: Apache-2.0
 
+
+import {Controller, useForm, ErrorMessage} from "react-hook-form";
+
 import React, {useEffect, useState} from 'react'
 import './App.css';
 import UserAppBar from "./UserAppBar";
-import {withAuthenticator} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import {API} from 'aws-amplify';
-import Link from '@mui/material/Link';
 import empty_application from "./data/application"
 import ApplicationAlert from "./ApplicationAlert";
 
-import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import List from '@mui/material/List';
@@ -28,7 +27,6 @@ import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 
 import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
 
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -37,7 +35,6 @@ import Grow from '@mui/material/Grow';
 import Drawer from '@mui/material/Drawer';
 import Grid from "@mui/material/Grid";
 import Badge from "@mui/material/Badge";
-import WavesIcon from "@mui/icons-material/Waves";
 import Checkbox from "@mui/material/Checkbox";
 import Stack from "@mui/material/Stack";
 
@@ -45,12 +42,15 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
-import Alert from '@mui/material/Alert';
 import Skeleton from "@mui/material/Skeleton";
 import awsExports from "./aws-exports";
+import Accounts from "./Accounts";
+import {FormHelperText} from "@mui/material";
+
 
 const apiName = 'drsplangui';
-const path = '/applications';
+const applications_path = '/applications';
+const accounts_path = '/accounts';
 const myInit = { // OPTIONAL
     // response: true
 };
@@ -65,7 +65,8 @@ const DeleteApplication = ({
                                application,
                                setApplications,
                                setTitle,
-                               setChecked
+                               setChecked,
+                               setApplicationEditIndex
                            }) => {
 
     function closeDialog() {
@@ -80,7 +81,8 @@ const DeleteApplication = ({
                     fetchApplications(
                         (fetch_results) => {
                             if ("success" in fetch_results) {
-                                setChecked([])
+                                setChecked([]);
+                                setApplicationEditIndex(0);
                                 setApplications(fetch_results.data);
                                 setTitle(fetch_results.data.length + " Applications")
                                 closeDialog();
@@ -120,14 +122,26 @@ const DeleteApplication = ({
     )
 }
 
+function fetchAccounts(cb) {
+    try {
+        API.get(apiName, accounts_path, myInit).then((results) => {
+            console.log("get accounts response is: " + JSON.stringify(results));
+            cb(results);
+        })
+    } catch (err) {
+        console.log('error fetching accounts: ' + err)
+    }
+}
+
+
 function fetchApplications(cb) {
     try {
-        API.get(apiName, path, myInit).then((results) => {
+        API.get(apiName, applications_path, myInit).then((results) => {
             console.log("get applications response is: " + JSON.stringify(results));
             cb(results);
         })
     } catch (err) {
-        console.log('error fetching applications' + err)
+        console.log('error fetching applications: ' + err)
     }
 }
 
@@ -140,7 +154,7 @@ function deleteApplication(application, cb) {
         }
         console.log("application to delete: " + JSON.stringify(application));
 
-        API.del(apiName, path, deleteData).then((results) => {
+        API.del(apiName, applications_path, deleteData).then((results) => {
             console.log("results from delete: " + JSON.stringify(results));
             cb(results);
 
@@ -158,7 +172,7 @@ function putApplication(application, cb) {
                 application: application
             }
         }
-        API.put(apiName, path, putData).then((results) => {
+        API.put(apiName, applications_path, putData).then((results) => {
                 console.log("results from put: " + JSON.stringify(results));
                 cb(results);
             }
@@ -186,263 +200,307 @@ function executePlans(executeData, cb) {
 }
 
 
-const CreateApplication = ({createDialogVisible, setCreateDialogVisible, setApplications, setTitle}) => {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [keyName, setKeyName] = useState('');
-    const [keyValue, setKeyValue] = useState('');
-    const [owner, setOwner] = useState('');
-    const [snsTopic, setSnsTopic] = useState('');
+const CreateUpdateApplication = ({
+                                     createUpdateDialogVisible,
+                                     setCreateUpdateDialogVisible,
+                                     setApplications,
+                                     applications,
+                                     applicationEditIndex,
+                                     accounts,
+                                     setTitle,
+                                     isUpdate,
+                                     setCreateUpdateApplicationsFlag
+                                 }) => {
+    const {register, handleSubmit, watch, reset, control, formState: {errors}} = useForm(
+        {
+            defaultValues: {
+                applicationName: '',
+                applicationDescription: '',
+                keyName: '',
+                keyValue: '',
+                applicationOwner: '',
+                snsTopic: '',
+                accountId: '-1'
+            }
+        }
+    );
+
+    useEffect(() => {
+        console.log("CreateUpdate useEffect, isUpdate is: " + isUpdate)
+        if (isUpdate) {
+            let application = applications[applicationEditIndex];
+            let accountIndex = accounts.findIndex((account) => account.AccountId === application.AccountId)
+
+            reset({
+                applicationName: application.AppName,
+                applicationDescription: application.Description,
+                keyName: application.KeyName,
+                keyValue: application.KeyValue,
+                applicationOwner: application.Owner,
+                snsTopic: application.SnsTopic,
+                accountIndex: accountIndex
+            });
+        } else {
+            reset({
+                applicationName: '',
+                applicationDescription: '',
+                keyName: '',
+                keyValue: '',
+                applicationOwner: '',
+                snsTopic: '',
+                accountIndex: '-1'
+            });
+        }
+
+    }, [isUpdate, JSON.stringify(applications[applicationEditIndex])]);
+
+
+    const isValidEmail = email =>
+        // eslint-disable-next-line no-useless-escape
+        /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(
+            email
+        );
+
 
     function closeDialog() {
-        setCreateDialogVisible(false);
-        setName('');
-        setDescription('');
-        setKeyName('');
-        setKeyValue('');
-        setOwner('');
-        setSnsTopic('');
+        reset();
+        setCreateUpdateDialogVisible(false);
     }
 
-    function handleCreateApplication() {
-        let application = JSON.parse(JSON.stringify(empty_application));
-        application.AppName = name;
-        application.Description = description;
-        application.KeyName = keyName;
-        application.KeyValue = keyValue;
-        application.Owner = owner;
-        application.SnsTopic = snsTopic;
+    function handleCreateUpdateApplication(formData) {
+        console.log("formData: " + JSON.stringify(formData))
+        console.log("errors: " + JSON.stringify(errors))
 
-        console.log("Create application details are: " + JSON.stringify(application))
-
-        putApplication(application,
+        let new_application = {};
+        if (isUpdate) {
+            new_application = JSON.parse(JSON.stringify(applications[applicationEditIndex]));
+        } else {
+            new_application = JSON.parse(JSON.stringify(empty_application));
+        }
+        new_application.AppName = formData.applicationName;
+        new_application.Description = formData.applicationDescription;
+        new_application.KeyName = formData.keyName;
+        new_application.KeyValue = formData.keyValue;
+        new_application.Owner = formData.applicationOwner;
+        new_application.SnsTopic = formData.snsTopic;
+        new_application.AccountId = accounts[formData.accountIndex].AccountId;
+        new_application.Region = accounts[formData.accountIndex].Region;
+        console.log("Create application details are: " + JSON.stringify(new_application))
+        putApplication(new_application,
             (results) => {
                 if ("success" in results) {
                     fetchApplications(
                         (fetch_results) => {
                             if ("success" in fetch_results) {
                                 setApplications(fetch_results.data);
+                                setTitle(fetch_results.data.length + " Applications")
                                 closeDialog();
                             } else if ("error" in fetch_results) {
                                 console.log("an error occurred retrieving application list: " + fetch_results.error)
                             }
                         }
                     )
+                    closeDialog();
                 } else if ("error" in results) {
                     console.log("error creating record: " + results.error)
                 }
             })
     }
 
-
     return (
         <Dialog
             fullWidth
             maxWidth="xl"
             scroll="paper"
-            open={createDialogVisible}
+            open={createUpdateDialogVisible}
             // style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}
         >
-            <DialogTitle>Create Application</DialogTitle>
+            <DialogTitle>{isUpdate ? "Update" : "Create"} Application</DialogTitle>
             <DialogContent dividers>
-                <Grid container spacing={1}>
-                    <Grid item xs={12}>
+                <form>
+                    <Grid container spacing={1}>
+                        <Grid item xs={12}>
+                            <Controller
+                                name={"applicationName"}
+                                control={control}
+                                rules={{required: true}}
+                                render={({field}) => (
+                                    <TextField fullWidth
+                                               error={"applicationName" in errors}
+                                               id="application-appName"
+                                               margin="normal"
+                                               label="Application Name"
+                                               helperText={("applicationName" in errors) ? "Application name is required" : "Enter a name for your application"}
+                                               {...field}
+                                               required
+                                    />
+                                )}
+                            />
 
-                        <TextField fullWidth id="application-appName" margin="normal" label="Application Name"
-                                   helperText="Application name, must be unique." value={name} onChange={(e) => {
-                            setName(e.target.value);
-                        }} required/>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Controller
+                                name={"applicationDescription"}
+                                control={control}
+                                render={({field: {onChange, value}}) => (
+                                    <TextField fullWidth
+                                               id="application-description"
+                                               margin="normal"
+                                               label="Description"
+                                               rows={4}
+                                               multiline
+                                               helperText="Describe your application."
+                                               onChange={onChange}
+                                               value={value}
+                                    />
+                                )}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <Controller
+                                name={"keyName"}
+                                control={control}
+                                rules={{required: true}}
+                                render={({field: {onChange, value}}) => (
+                                    <TextField
+                                        error={"keyName" in errors}
+                                        fullWidth
+                                        id="application-keyName"
+                                        margin="normal"
+                                        label="Key Name"
+                                        helperText={("keyName" in errors) ? "Key Name is required" : "The AWS Tag key name identifying the application. (e.g. Role)"}
+                                        onChange={onChange}
+                                        value={value}
+                                        required
+                                    />
+                                )}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <Controller
+                                name={"keyValue"}
+                                control={control}
+                                rules={{required: true}}
+                                render={({field: {onChange, value}}) => (
+                                    <TextField
+                                        error={"keyValue" in errors}
+                                        fullWidth
+                                        id="application-keyValue"
+                                        margin="normal"
+                                        label="Key Value"
+                                        helperText={("keyValue" in errors) ? "Key Value is required" : "The AWS tag key value identifying the application. (e.g. DB)"}
+                                        onChange={onChange}
+                                        value={value}
+                                        required
+                                    />
+                                )}
+                            />
+
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Controller
+                                name={"applicationOwner"}
+                                control={control}
+                                rules={{required: true, validate: isValidEmail}}
+                                render={({field: {onChange, value}}) => (
+                                    <TextField
+                                        error={"applicationOwner" in errors}
+                                        fullWidth
+                                        id="application-owner"
+                                        margin="normal"
+                                        label="Application Owner Email Address"
+                                        helperText={("applicationOwner" in errors) ? "A valid email is required" : "The email address for the owner of this application."}
+                                        onChange={onChange}
+                                        value={value}
+                                        required
+                                    />
+
+                                )}
+                            />
+
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Controller
+                                name={"snsTopic"}
+                                control={control}
+                                render={({field: {onChange, value}}) => (
+                                    <TextField
+                                        fullWidth
+                                        id="application-sns-topic"
+                                        margin="normal"
+                                        label="Application SNS Topic for Notification"
+                                        helperText="Enter the SNS topic that should be notified when a drill or recovery is execute.  Leave blank for no notifications."
+                                        onChange={onChange}
+                                        value={value}
+                                    />
+                                )}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel id={"select-account-input"}>Select Account:</InputLabel>
+                                <Controller
+                                    name={"accountIndex"}
+                                    control={control}
+                                    rules={{required: true, min: 0}}
+                                    render={({field: {onChange, value}}) => (
+                                        <Select
+                                            error={"accountIndex" in errors}
+                                            labelId={"select-account-label"}
+                                            id={"select-account"}
+                                            defaultValue='-1'
+                                            label="Select Account"
+                                            onChange={onChange}
+                                            value={value}
+                                        >
+                                            <MenuItem key={`account-menu-item`} disabled value="-1">
+                                                <em>Select from your AWS Account definitions</em>
+                                            </MenuItem>
+                                            {
+                                                accounts.length === 0 ?
+                                                    <MenuItem
+                                                        key={`no-account-menu-item`}
+                                                        value="0" disabled>No Accounts - create one first
+                                                    </MenuItem> :
+                                                    accounts.map((account, idx) => {
+                                                        return (
+                                                            <MenuItem
+                                                                key={`account-${idx}-menu-item`}
+                                                                value={idx}>{account.AccountId} - {account.Region}</MenuItem>
+                                                        )
+                                                    })};
+                                        </Select>
+
+                                    )}
+                                />
+                                <FormHelperText>{("accountId" in errors) ? "Select a valid account.  Define accounts in Account menu" : "Select the account where this application is replicating to DRS"}</FormHelperText>
+                            </FormControl>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={12}>
-                        <TextField fullWidth id="application-description" margin="normal" label="Description"
-                                   rows={4}
-                                   multiline
-                                   helperText="Describe your application." value={description} onChange={(e) => {
-                            setDescription(e.target.value)
-                        }}/>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <TextField fullWidth id="application-keyName" margin="normal" label="Key Name"
-                                   helperText="The AWS Tag key name identifying the application. (e.g. Role)"
-                                   value={keyName}
-                                   onChange={(e) => {
-                                       setKeyName(e.target.value)
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <TextField fullWidth id="application-keyValue" margin="normal" label="Key Value"
-                                   helperText="The AWS tag key value identifying the application. (e.g. DB)"
-                                   value={keyValue}
-                                   onChange={(e) => {
-                                       setKeyValue(e.target.value)
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField fullWidth id="application-owner" margin="normal"
-                                   label="Application Owner Email Address"
-                                   helperText="The email address for the owner of this application." value={owner}
-                                   onChange={(e) => {
-                                       setOwner(e.target.value)
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField fullWidth id="application-sns-topic" margin="normal"
-                                   label="Application SNS Topic for Notification"
-                                   helperText="Enter the SNS topic that should be notified when a drill or recovery is execute.  Leave blank for no notifications." value={snsTopic}
-                                   onChange={(e) => {
-                                       setSnsTopic(e.target.value)
-                                   }} required/>
-                    </Grid>
-                </Grid>
+                </form>
             </DialogContent>
             <DialogActions>
                 <Button autoFocus onClick={closeDialog}>
                     Cancel
                 </Button>
-                <Button onClick={handleCreateApplication}>Create</Button>
+                <Button onClick={handleSubmit(handleCreateUpdateApplication)}>{isUpdate ? "Update" : "Create"}</Button>
             </DialogActions>
         </Dialog>
     )
 }
 
-const UpdateApplication = ({
-                               updateDialogVisible,
-                               setUpdateDialogVisible,
-                               application,
-                               setApplications
-                           }) => {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [keyName, setKeyName] = useState('');
-    const [keyValue, setKeyValue] = useState('');
-    const [owner, setOwner] = useState('');
-    const [snsTopic, setSnsTopic] = useState('');
-
-    function closeDialog() {
-        setUpdateDialogVisible(false);
-        setName('')
-        setDescription('')
-        setKeyName('')
-        setKeyValue('')
-        setOwner('')
-        setSnsTopic('')
-    }
-
-    function handleUpdateApplication() {
-        let application_update = JSON.parse(JSON.stringify(application));
-        application_update.AppName = name === '' ? application.AppName : name;
-        application_update.Description = description === '' ? application.Description : description;
-        application_update.KeyName = keyName === '' ? application.KeyName : keyName;
-        application_update.KeyValue = keyValue === '' ? application.KeyValue : keyValue;
-        application_update.Owner = owner === '' ? application.Owner : owner;
-        application_update.SnsTopic = snsTopic === '' ? application.SnsTopic : snsTopic;
-
-        console.log("Update application details are: " + JSON.stringify(application_update))
-        putApplication(application_update,
-            (results) => {
-                if ("success" in results) {
-                    fetchApplications(
-                        (fetch_results) => {
-                            if ("success" in fetch_results) {
-                                console.log(fetch_results.success)
-                                setApplications(fetch_results.data);
-                                closeDialog();
-                            } else if ("error" in fetch_results) {
-                                console.log("an error occurred retrieving application list: " + fetch_results.error)
-                            }
-                        }
-                    );
-                } else if ("error" in results) {
-                    console.log("error updating record: " + results.error)
-                }
-            }
-        )
-    }
-
-    return (
-        <Dialog
-            fullWidth
-            maxWidth="xl"
-            scroll="paper"
-            open={updateDialogVisible}
-            // style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}
-        >
-            <DialogTitle>Update Application {application.AppName}</DialogTitle>
-            <DialogContent dividers>
-                <Grid container spacing={1}>
-                    <Grid item xs={12}>
-
-                        <TextField fullWidth id="application-appName" margin="normal" label="Application Name"
-                                   helperText="Application name, must be unique." defaultValue={application.AppName}
-                                   onChange={(e) => {
-                                       setName(e.target.value);
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField fullWidth id="application-description" margin="normal" label="Description"
-                                   rows={4}
-                                   multiline
-                                   helperText="Describe your application." defaultValue={application.Description}
-                                   onChange={(e) => {
-                                       setDescription(e.target.value)
-                                   }}/>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <TextField fullWidth id="application-keyName" margin="normal" label="Key Name"
-                                   helperText="The AWS Tag key name identifying the application. (e.g. Role)"
-                                   defaultValue={application.KeyName}
-                                   onChange={(e) => {
-                                       setKeyName(e.target.value)
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={6}>
-                        <TextField fullWidth id="application-keyValue" margin="normal" label="Key Value"
-                                   helperText="The AWS tag key value identifying the application. (e.g. DB)"
-                                   defaultValue={application.KeyValue}
-                                   onChange={(e) => {
-                                       setKeyValue(e.target.value)
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField fullWidth id="application-owner" margin="normal"
-                                   label="Application Owner Email Address"
-                                   helperText="The email address for the owner of this application."
-                                   defaultValue={application.Owner}
-                                   onChange={(e) => {
-                                       setOwner(e.target.value)
-                                   }} required/>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField fullWidth id="application-sns-topic" margin="normal"
-                                   label="Application SNS Topic for Notification"
-                                   helperText="Enter the SNS topic that should be notified when a drill or recovery is execute.  Leave blank for no notifications."
-                                   defaultValue={application.SnsTopic}
-                                   onChange={(e) => {
-                                       setSnsTopic(e.target.value)
-                                   }} required/>
-                    </Grid>
-                </Grid>
-            </DialogContent>
-            <DialogActions>
-                <Button autoFocus onClick={closeDialog}>
-                    Cancel
-                </Button>
-                <Button onClick={handleUpdateApplication}>Update</Button>
-            </DialogActions>
-        </Dialog>
-    )
-}
 
 const ApplicationList = ({
-                             setUpdateDialogVisible,
+                             setCreateUpdateDialogVisible,
                              setDeleteDialogVisible,
-                             setApplications,
+                             setIsUpdate,
                              applications,
                              setApplication,
                              setTitle,
                              checked,
                              setChecked,
-                             setOpenPlans
+                             setOpenPlans,
+                             setApplicationEditIndex
                          }) => {
 
 
@@ -487,8 +545,9 @@ const ApplicationList = ({
                                 />
 
                                 <IconButton edge="start" aria-label="edit" onClick={() => {
-                                    setApplication(application_item)
-                                    setUpdateDialogVisible(true)
+                                    setApplicationEditIndex(idx);
+                                    setIsUpdate(true);
+                                    setCreateUpdateDialogVisible(true);
                                 }}>
                                     <EditIcon/>
                                 </IconButton>
@@ -524,14 +583,15 @@ const ExecutePlans = ({
                           setExecuteDialogVisible,
                           checked,
                           applications,
-                          isDrill,
                           setAlertMessage,
                           setShowAlert,
                           setAlertType,
                           user
                       }) => {
+
     const [selectedPlans, setSelectedPlans] = React.useState({});
     const [topicARN, setTopicARN] = React.useState('');
+    const [isDrill, setIsDrill] = React.useState(true);
 
 
     function closeDialog() {
@@ -600,71 +660,103 @@ const ExecutePlans = ({
             <DialogTitle>Execute {isDrill ? "Test Drill" : "Failover"} for {checked.length} Selected
                 Applications</DialogTitle>
             <DialogContent dividers>
+                <Grid container spacing={1}>
+                    <Grid item xs={12}>
+                        <FormControl fullWidth>
+                            <InputLabel id={"select-execution-input"}>Select Execution Type:</InputLabel>
+                            <Select
+                                labelId={"select-execution-label"}
+                                id={"select-execution-id"}
+                                value={isDrill}
+                                label="Select Account"
+                                onChange={(e) => {
+                                    console.log("changed drill value is: " + e.target.value)
+                                    setIsDrill(e.target.value)
+                                }}
+                            >
+                                <MenuItem
+                                    key={`execution-drill-menu-item`}
+                                    value={true}>Drill</MenuItem>
+                                <MenuItem
+                                    key={`execution-drill-menu-item`}
+                                    value={false}>Failover</MenuItem>
 
-                <Box sx={{flexGrow: 1}}>
-                    <List dense sx={{width: '100%', bgcolor: 'background.paper'}}>
-                        {
-                            checked.map((checked_application) => {
-                                const labelId = `label-${applications[checked_application].AppName}`;
-                                return (
-                                    <ListItem key={`${applications[checked_application].AppName}-execute-plans`}>
-                                        <Grid container direction="row" alignItems="center">
-                                            <Grid item xs={6}>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Box sx={{flexGrow: 1}}>
+                            <List dense sx={{width: '100%', bgcolor: 'background.paper'}}>
+                                {
+                                    checked.map((checked_application) => {
+                                        const labelId = `label-${applications[checked_application].AppName}`;
+                                        return (
+                                            <ListItem
+                                                key={`${applications[checked_application].AppName}-execute-plans`}>
+                                                <Grid container direction="row" alignItems="center">
+                                                    <Grid item xs={6}>
 
-                                                <ListItemText
-                                                    primary={applications[checked_application].AppName}
-                                                    secondary={`Description: ${applications[checked_application].Description}  Owner: ${applications[checked_application].Owner}`}
-                                                    edge="start"
-                                                />
-                                            </Grid>
-                                            <Grid item xs={6}>
-                                                <FormControl fullWidth>
-                                                    <InputLabel id={labelId + "-input"}>Select Plan:</InputLabel>
-                                                    <Select
-                                                        labelId={labelId + "-select-label"}
-                                                        id={labelId + "-select"}
-                                                        defaultValue='-1'
-                                                        label="Execute Plan"
-                                                        onChange={(e) => {
-                                                            console.log("changed plan value is: " + e.target.value)
-                                                            let selected_plans = JSON.parse(JSON.stringify(selectedPlans));
-                                                            selected_plans[checked_application] = e.target.value;
-                                                            setSelectedPlans(selected_plans);
-                                                        }}
-                                                    >
-                                                        <MenuItem key={`${labelId}-menu-item`} disabled value="-1">
-                                                            <em>Select a plan</em>
-                                                        </MenuItem>
-                                                        {
-                                                            applications[checked_application].Plans.length === 0 ?
-                                                                <MenuItem
-                                                                    key={`${labelId}-menu-item`}
-                                                                    value="0" disabled>No plans - create one first
-                                                                    one </MenuItem> :
-                                                                applications[checked_application].Plans.map((plan, idx) => {
-                                                                    console.log("Plan is: " + JSON.stringify(plan.PlanName) + "\n and index is: " + idx);
-                                                                    return (
-                                                                        plan.Waves.length === 0 ? <MenuItem
-                                                                                key={`${labelId}-${plan.PlanName}-menu-item`}
-                                                                                value={idx} disabled>Plan "{plan.PlanName}"
-                                                                                has
-                                                                                no waves - create one first</MenuItem> :
-                                                                            <MenuItem
-                                                                                key={`${labelId}-${plan.PlanName}-menu-item`}
-                                                                                value={idx}>{plan.PlanName}</MenuItem>
-                                                                    )
-                                                                })};
+                                                        <ListItemText
+                                                            primary={applications[checked_application].AppName}
+                                                            secondary={`Description: ${applications[checked_application].Description}  Owner: ${applications[checked_application].Owner}`}
+                                                            edge="start"
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={6}>
+                                                        <FormControl fullWidth>
+                                                            <InputLabel id={labelId + "-input"}>Select
+                                                                Plan:</InputLabel>
+                                                            <Select
+                                                                labelId={labelId + "-select-label"}
+                                                                id={labelId + "-select"}
+                                                                defaultValue='-1'
+                                                                label="Execute Plan"
+                                                                onChange={(e) => {
+                                                                    console.log("changed plan value is: " + e.target.value)
+                                                                    let selected_plans = JSON.parse(JSON.stringify(selectedPlans));
+                                                                    selected_plans[checked_application] = e.target.value;
+                                                                    setSelectedPlans(selected_plans);
+                                                                }}
+                                                            >
+                                                                <MenuItem key={`${labelId}-menu-item`} disabled
+                                                                          value="-1">
+                                                                    <em>Select a plan</em>
+                                                                </MenuItem>
+                                                                {
+                                                                    applications[checked_application].Plans.length === 0 ?
+                                                                        <MenuItem
+                                                                            key={`${labelId}-menu-item`}
+                                                                            value="0" disabled>No plans - create one
+                                                                            first
+                                                                            one </MenuItem> :
+                                                                        applications[checked_application].Plans.map((plan, idx) => {
+                                                                            console.log("Plan is: " + JSON.stringify(plan.PlanName) + "\n and index is: " + idx);
+                                                                            return (
+                                                                                plan.Waves.length === 0 ? <MenuItem
+                                                                                        key={`${labelId}-${plan.PlanName}-menu-item`}
+                                                                                        value={idx} disabled>Plan
+                                                                                        "{plan.PlanName}"
+                                                                                        has
+                                                                                        no waves - create one
+                                                                                        first</MenuItem> :
+                                                                                    <MenuItem
+                                                                                        key={`${labelId}-${plan.PlanName}-menu-item`}
+                                                                                        value={idx}>{plan.PlanName}</MenuItem>
+                                                                            )
+                                                                        })};
 
-                                                    </Select>
-                                                </FormControl>
-                                            </Grid>
-                                        </Grid>
-                                    </ListItem>
-                                )
-                            })
-                        }
-                    </List>
-                </Box>
+                                                            </Select>
+                                                        </FormControl>
+                                                    </Grid>
+                                                </Grid>
+                                            </ListItem>
+                                        )
+                                    })
+                                }
+                            </List>
+                        </Box>
+                    </Grid>
+                </Grid>
             </DialogContent>
             <DialogActions>
                 <Button autoFocus onClick={closeDialog}>
@@ -674,7 +766,8 @@ const ExecutePlans = ({
                         disabled={Object.keys(selectedPlans).length <= 0}>Execute</Button>
             </DialogActions>
         </Dialog>
-    );
+    )
+        ;
 };
 
 
@@ -684,20 +777,24 @@ function Applications(
     }
 ) {
     const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-    const [createDialogVisible, setCreateDialogVisible] = useState(false);
+    const [createUpdateDialogVisible, setCreateUpdateDialogVisible] = useState(false);
     const [executeDialogVisible, setExecuteDialogVisible] = useState(false);
-    const [updateDialogVisible, setUpdateDialogVisible] = useState(false);
     const [application, setApplication] = useState({});
     const [applications, setApplications] = useState(null);
+    const [applicationEditIndex, setApplicationEditIndex] = useState(0);
+    const [accounts, setAccounts] = useState(null);
+    const [openAccounts, setOpenAccounts] = useState(false)
     const [openPlans, setOpenPlans] = useState(false)
-    const [isDrill, setIsDrill] = useState(false)
     const [title, setTitle] = useState("DRS Accelerator")
     const [checked, setChecked] = useState([]);
     const [showAlert, setShowAlert] = useState(false);
     const [alertType, setAlertType] = useState("success");
     const [alertMessage, setAlertMessage] = useState('');
+    const [isUpdate, setIsUpdate] = useState(false);
+
 
     const handleClose = () => setOpenPlans(false);
+    const handleCloseAccounts = () => setOpenAccounts(false);
 
     useEffect(() => {
         try {
@@ -714,12 +811,33 @@ function Applications(
         } catch (err) {
             console.log('error fetching applications' + err)
         }
-    }, [JSON.stringify(applications), JSON.stringify(application)]);
+    }, []);
+
+    useEffect(() => {
+        try {
+            fetchAccounts(
+                (fetch_results) => {
+                    if ("success" in fetch_results) {
+                        setAccounts(fetch_results.data)
+                    } else if ("error" in fetch_results) {
+                        console.log("an error occurred retrieving accounts list: " + fetch_results.error)
+                    }
+                }
+            )
+        } catch (err) {
+            console.log('error fetching accounts' + err)
+        }
+    }, []);
 
 
     return (
         <Box sx={{flexGrow: 1}}>
-            <UserAppBar signOut={signOut} user={user} title={title}/>
+            <UserAppBar
+                signOut={signOut}
+                user={user}
+                title={title}
+                setOpenAccounts={setOpenAccounts}
+            />
             {showAlert &&
                 <ApplicationAlert
                     setShowAlert={setShowAlert}
@@ -738,7 +856,7 @@ function Applications(
                                 <Typography variant="h5" align="center" sx={{m: 2}}>There are no applications defined,
                                     create one.</Typography> :
                                 <ApplicationList
-                                    setUpdateDialogVisible={setUpdateDialogVisible}
+                                    setCreateUpdateDialogVisible={setCreateUpdateDialogVisible}
                                     setDeleteDialogVisible={setDeleteDialogVisible}
                                     setApplication={setApplication}
                                     setApplications={setApplications}
@@ -747,6 +865,8 @@ function Applications(
                                     setOpenPlans={setOpenPlans}
                                     checked={checked}
                                     setChecked={setChecked}
+                                    setIsUpdate={setIsUpdate}
+                                    setApplicationEditIndex={setApplicationEditIndex}
 
                                 />)
                         }
@@ -757,24 +877,27 @@ function Applications(
                                            setApplications={setApplications}
                                            setTitle={setTitle}
                                            setChecked={setChecked}
-                        />
-                        <UpdateApplication updateDialogVisible={updateDialogVisible}
-                                           setUpdateDialogVisible={setUpdateDialogVisible}
-                                           application={application}
-                                           setApplications={setApplications}
+                                           setApplicationEditIndex={setApplicationEditIndex}
                         />
 
-                        <CreateApplication createDialogVisible={createDialogVisible}
-                                           setCreateDialogVisible={setCreateDialogVisible}
-                                           setApplications={setApplications}
-                                           setTitle={setTitle}
-                        />
+                        {
+                            applications != null && accounts != null &&
+                            <CreateUpdateApplication
+                                createUpdateDialogVisible={createUpdateDialogVisible}
+                                setCreateUpdateDialogVisible={setCreateUpdateDialogVisible}
+                                setApplications={setApplications}
+                                setTitle={setTitle}
+                                accounts={accounts}
+                                applications={applications}
+                                applicationEditIndex={applicationEditIndex}
+                                isUpdate={isUpdate}
+                            />
+                        }
                         <ExecutePlans executeDialogVisible={executeDialogVisible}
                                       setExecuteDialogVisible={setExecuteDialogVisible}
                                       checked={checked}
                                       setTitle={setTitle}
                                       applications={applications}
-                                      isDrill={isDrill}
                                       setAlertMessage={setAlertMessage}
                                       setShowAlert={setShowAlert}
                                       setAlertType={setAlertType}
@@ -785,26 +908,21 @@ function Applications(
                     <Stack spacing={4} direction="row" justifyContent="center"
                            alignItems="center">
 
-                        <Button variant="contained" onClick={() => {
-                            setCreateDialogVisible(true);
-                        }}>Create New Application</Button>
-                        <Button variant="contained" onClick={() => {
-                            console.log("execute plans clicked.")
-                            console.log("checked are: " + JSON.stringify(checked))
-                            setIsDrill(true);
-                            setExecuteDialogVisible(true);
-                        }}>
-                            {checked.length > 0 ? "Execute " + checked.length + " Drills" : "Select Applications For Drill"}
-                        </Button>
+                        {
+                            accounts != null && <Button variant="contained" onClick={() => {
+                                setIsUpdate(false);
+                                setCreateUpdateDialogVisible(true);
+                            }}>Create New Application</Button>
+                        }
                         <Button variant="contained" onClick={() => {
                             console.log("execute plans clicked.")
                             console.log("checked are: " + JSON.stringify(checked))
-                            setIsDrill(false);
                             setExecuteDialogVisible(true);
-                        }}>
-                            {checked.length > 0 ? "Execute " + checked.length + " Failovers" : "Select Applications For Failover"}
+                        }}
+                                disabled={checked.length === 0}
+                        >
+                            {checked.length > 0 ? "Drill / Failover " + checked.length + " Applications" : "Check applications to drill / failover"}
                         </Button>
-
                     </Stack>
                     <Drawer anchor="right" open={openPlans} onClose={handleClose}
                             PaperProps={{
@@ -813,8 +931,19 @@ function Applications(
                         <Plans
                             application={application}
                             setApplication={setApplication}
-                            setOpenPlans={setOpenPlans}
                             putApplication={putApplication}
+                            setApplications={setApplications}
+                            fetchApplications={fetchApplications}
+                        />
+                    </Drawer>
+                    <Drawer anchor="right" open={openAccounts} onClose={handleCloseAccounts}
+                            PaperProps={{
+                                sx: {width: "90%"},
+                            }}>
+                        <Accounts
+                            fetchAccounts={fetchAccounts}
+                            accounts={accounts}
+                            setAccounts={setAccounts}
                             signOut={signOut}
                             user={user}
                         />

@@ -3,10 +3,16 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import React from "react";
+import React, {useEffect} from "react";
 
 
-const UserAppBar = ({signOut, user, title}) => {
+const UserAppBar = ({
+                        signOut,
+                        user,
+                        setOpenAccounts,
+                        title
+                    }) => {
+
     return (
         <Box sx={{flexGrow: 1}}>
             <AppBar position="static">
@@ -14,6 +20,7 @@ const UserAppBar = ({signOut, user, title}) => {
                     <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
                         {title}
                     </Typography>
+                    <Button color="inherit" onClick={() => setOpenAccounts(true)}>Accounts</Button>
                     <Button color="inherit" onClick={signOut}>SignOut {user.attributes.email}</Button>
                 </Toolbar>
             </AppBar>

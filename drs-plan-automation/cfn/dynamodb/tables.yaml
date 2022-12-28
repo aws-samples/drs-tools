@@ -17,6 +17,19 @@ Resources:
         - AttributeName: "AppId"
           KeyType: "HASH"
 
+  DRSPlanAutomationAccountsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:  drs-plan-automation-accounts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "AccountId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "AccountId"
+          KeyType: "HASH"
+
+
   DRSPlanAutomationExecutionTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -51,6 +64,18 @@ Resources:
 
 
 Outputs:
+  DRSPlanAutomationAccountsTableName:
+    Value: !Ref DRSPlanAutomationAccountsTable
+    Description: "DRS Accounts Table Name"
+    Export:
+      Name: "drs-plan-automation-accounts-table-name"
+
+  DRSPlanAutomationAccountsTableArn:
+    Value: !GetAtt DRSPlanAutomationAccountsTable.Arn
+    Description: "DRS Accounts Table Arn"
+    Export:
+      Name: "drs-plan-automation-accounts-table-arn"
+
   DRSPlanAutomationApplicationsTableName:
     Value: !Ref DRSPlanAutomationApplicationsTable
     Description: "DRS Applications Table Name"

@@ -87,7 +87,7 @@ def deploy_cfn(name, cfn, params, tags, creds, region):
         raise
 
 
-def put_item(table, file, assumed_credentials, region):
+def put_item_file(table, file, assumed_credentials, region):
     try:
         with open(file, 'r') as json_doc:
             json_doc_string = json_doc.read()
@@ -95,15 +95,23 @@ def put_item(table, file, assumed_credentials, region):
             json_doc_object = json.loads(json_doc_string)
             logger.debug("Loaded JSON from file: {}".format(json_doc_object))
 
-        if json_doc_object:
-            dynamodb = boto3_resource('dynamodb', assumed_credentials, region)
-            dynamodb_table = dynamodb.Table(table)
-            dynamodb_table.put_item(
-                Item=json_doc_object
-            )
-            logger.info("inserted sample application item into DynamoDB table: {}".format(table))
     except Exception as e:
-        logger.error('Failure putting object {} in table {}: {}'.format(object, table, e))
+        logger.error('Failure opening file {} and reading json object: {}'.format(file, e))
+        raise
+
+    ddb_put_item(assumed_credentials, json_doc_object, region, table)
+
+
+def ddb_put_item(assumed_credentials, json_doc_object, region, table):
+    try:
+        dynamodb = boto3_resource('dynamodb', assumed_credentials, region)
+        dynamodb_table = dynamodb.Table(table)
+        dynamodb_table.put_item(
+            Item=json_doc_object
+        )
+        logger.info("inserted sample application item into DynamoDB table: {}".format(table))
+    except Exception as e:
+        logger.error('Failure putting object {} into table {}: {}'.format(json_doc_object, table, e))
         raise
 
 
@@ -462,6 +470,24 @@ def update_parameter_file(filename, json_params):
     with open(file_path, 'w') as param_write_doc:
         for key in json_params.keys():
             param_doc_json['Parameters'][key] = json_params[key]
+        param_write_doc.write(json.dumps(param_doc_json))
+        logger.info("Wrote file {} with json: {}".format(filename, param_doc_json))
+
+
+def update_json_file(filename, json_params):
+    with open(filename, 'r') as param_read_doc:
+        param_doc_string = param_read_doc.read()
+        logger.debug("Parameter file contents are: {}".format(param_doc_string))
+
+    param_doc_json = {}
+    if param_doc_string:
+        param_doc_json = json.loads(param_doc_string)
+
+    logger.info("Loaded JSON from file: {}".format(param_doc_json))
+
+    with open(filename, 'w') as param_write_doc:
+        for key in json_params.keys():
+            param_doc_json[key] = json_params[key]
         param_write_doc.write(json.dumps(param_doc_json))
         logger.info("Wrote file {} with json: {}".format(filename, param_doc_json))
 

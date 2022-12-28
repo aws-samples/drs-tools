@@ -20,6 +20,8 @@ import UserAppBar from "./UserAppBar";
 
 import PlanResults from "./PlanResults";
 import Grid from "@mui/material/Grid";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
 
 function TabPanel(props) {
     const {children, value, index, ...other} = props;
@@ -49,11 +51,11 @@ function a11yProps(index) {
 }
 
 function Plan({
-                  user,
-                  signOut,
                   application,
                   setApplication,
                   putApplication,
+setApplications,
+    fetchApplications,
                   setOpenPlan,
                   currentPlanIndex,
                   currentPlan,
@@ -124,6 +126,15 @@ function Plan({
             (results) => {
                 if ("success" in results) {
                     setApplication(results.data)
+                    fetchApplications(
+                        (fetch_results) => {
+                            if ("success" in fetch_results) {
+                                setApplications(fetch_results.data);
+                            } else if ("error" in fetch_results) {
+                                console.log("an error occurred retrieving application list: " + fetch_results.error)
+                            }
+                        }
+                    )
                     closeDrawer();
                 } else if ("error" in results) {
                     console.log(`error creating / updating application ${new_application.AppName} with plan ${new_plan.PlanName}: ${results.error}`)
@@ -147,7 +158,16 @@ function Plan({
     return (
         <Grow in={true}>
             <Box sx={{flexGrow: 1}}>
-                <UserAppBar signOut={signOut} user={user} title={`Plan: ${currentPlan.PlanName}`}/>
+                <Box sx={{flexGrow: 1}}>
+                    <AppBar position="static">
+                        <Toolbar>
+                            <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
+                                {`Plan: ${currentPlan.PlanName}`}
+                            </Typography>
+                        </Toolbar>
+                    </AppBar>
+                </Box>
+
                 <Tabs
                     value={nav}
                     onChange={(event, newValue) => {
