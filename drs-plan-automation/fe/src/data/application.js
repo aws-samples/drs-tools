@@ -5,5 +5,6 @@ export default {
   KeyValue: "",
   Owner: "",
   SnsTopic: "",
+  AccountId: "",
   Plans: []
 }

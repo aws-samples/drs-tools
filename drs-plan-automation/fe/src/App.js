@@ -99,11 +99,12 @@ export default function App() {
     });
     return (
         <Authenticator
+            socialProviders={['facebook', 'google']}
             loginMechanisms={['email']}
             formFields={formFields}
             components={components}
             hideSignUp={true}
-            variation="modal"
+            variation="default"
         >
             {({signOut, user}) => (
                 <Applications user={user} signOut={signOut}/>

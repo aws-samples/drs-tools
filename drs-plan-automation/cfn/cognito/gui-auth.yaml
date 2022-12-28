@@ -277,6 +277,20 @@ Resources:
                         - ShouldNotCreateEnvResources
                         - prod
                         - Ref: env
+                    - "/*/accounts"
+              - Fn::Join:
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - Ref: AWS::Region
+                    - ":"
+                    - Ref: AWS::AccountId
+                    - ":"
+                    - Fn::ImportValue: "drs-plan-automation-api-id"
+                    - "/"
+                    - Fn::If:
+                        - ShouldNotCreateEnvResources
+                        - prod
+                        - Ref: env
                     - "/*/applications/*"
               - Fn::Join:
                   - ''

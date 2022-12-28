@@ -331,7 +331,7 @@ function Actions({
         <Box sx={{flexGrow: 1}}>
             <Divider>
                 <Chip icon={<AddIcon/>}
-                      label={isPreWave ? `${actions.length} PreWave Actions` : `${actions.length} PostWave Actions`}
+                      label={isPreWave ? `Create - ${actions.length} PreWave Actions` : `Create - ${actions.length} PostWave Actions`}
                       color="primary"
                       onClick={() => {
                           let newAction = JSON.parse(JSON.stringify(empty_action))

@@ -32,6 +32,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
 
 
 const DeletePlan = ({
@@ -41,7 +43,9 @@ const DeletePlan = ({
                         putApplication,
                         setApplication,
                         setCurrentPlanIndex,
-                        currentPlanIndex
+                        currentPlanIndex,
+    setApplications,
+    fetchApplications
                     }) => {
 
     function closeDialog() {
@@ -58,12 +62,23 @@ const DeletePlan = ({
                     console.log(results.success)
                     setCurrentPlanIndex(currentPlanIndex > 0 ? (currentPlanIndex - 1) : 0)
                     setApplication(results.data);
+                    fetchApplications(
+                        (fetch_results) => {
+                            if ("success" in fetch_results) {
+                                setApplications(fetch_results.data);
+                            } else if ("error" in fetch_results) {
+                                console.log("an error occurred retrieving application list: " + fetch_results.error)
+                            }
+                        }
+                    )
+                    closeDialog();
+
                 } else if ("error" in results) {
                     console.log("an error occurred adding application: " + results.error)
                 }
             }
         );
-        closeDialog();
+
     }
 
 
@@ -117,7 +132,9 @@ const PlanList = ({
                       setCurrentPlanIndex,
                       setOpenPlan,
                       setCurrentPlan,
-                      putApplication
+                      putApplication,
+    fetchApplications,
+    setApplications
                   }) => {
 
     const handleOpen = () => setOpenPlan(true);
@@ -152,6 +169,15 @@ const PlanList = ({
                 if ("success" in results) {
                     console.log(results.success)
                     setApplication(results.data);
+                    fetchApplications(
+                        (fetch_results) => {
+                            if ("success" in fetch_results) {
+                                setApplications(fetch_results.data);
+                            } else if ("error" in fetch_results) {
+                                console.log("an error occurred retrieving application list: " + fetch_results.error)
+                            }
+                        }
+                    )
                 } else if ("error" in results) {
                     console.log("an error occurred adding application: " + results.error)
                 }
@@ -190,7 +216,6 @@ const PlanList = ({
                                             </Badge>
                                         </ListItemButton>
                                     </Grid>
-
                                     <Grid item xs={1} align="center">
                                         <IconButton aria-label="copy"
                                                     onClick={() => {
@@ -220,7 +245,13 @@ const PlanList = ({
 };
 
 
-function Plans({signOut, user, application, putApplication, setApplication}) {
+function Plans({
+                   application,
+                   putApplication,
+                   setApplication,
+    fetchApplications,
+    setApplications
+               }) {
     const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
     const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
     const [title, setTitle] = useState("")
@@ -233,22 +264,18 @@ function Plans({signOut, user, application, putApplication, setApplication}) {
     }
     const handleOpen = () => setOpenPlan(true);
 
-
-    // const handleUpdate = () => {
-    //     fetchPlans(setPlans, setTitle, appName)
-    // }
-
-    useEffect(() => {
-        console.log("plans are:  " + JSON.stringify(application.Plans))
-        setApplication(application);
-        setTitle(`Application: ${application.AppName} - ${application.Plans.length} Plans`)
-
-    }, [JSON.stringify(application.Plans)]);
-
     return (
         <Grow in={true}>
             <Box sx={{flexGrow: 1}}>
-                <UserAppBar signOut={signOut} user={user} title={title}/>
+                <Box sx={{flexGrow: 1}}>
+                    <AppBar position="static">
+                        <Toolbar>
+                            <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
+                                {`Application: ${application.AppName} - ${application.Plans.length} Plans`}
+                            </Typography>
+                        </Toolbar>
+                    </AppBar>
+                </Box>
                 <Box sx={{flexGrow: 1}}>
                     {
                         application.Plans.length === 0 ?
@@ -263,6 +290,8 @@ function Plans({signOut, user, application, putApplication, setApplication}) {
                                 setOpenPlan={setOpenPlan}
                                 putApplication={putApplication}
                                 setCurrentPlan={setCurrentPlan}
+                                fetchApplications={fetchApplications}
+                                setApplications={setApplications}
                             />
                     }
 
@@ -276,6 +305,8 @@ function Plans({signOut, user, application, putApplication, setApplication}) {
                                     setTitle={setTitle}
                                     putApplication={putApplication}
                                     setApplication={setApplication}
+                                    fetchApplications={fetchApplications}
+                                    setApplications={setApplications}
                         />
                     }
                 </Box>
@@ -298,10 +329,10 @@ function Plans({signOut, user, application, putApplication, setApplication}) {
                           putApplication={putApplication}
                           currentPlanIndex={currentPlanIndex}
                           setOpenPlan={setOpenPlan}
-                          signOut={signOut}
-                          user={user}
                           currentPlan={currentPlan}
                           setCurrentPlan={setCurrentPlan}
+                          fetchApplications={fetchApplications}
+                          setApplications={setApplications}
                     />
                 </Drawer>
             </Box>

@@ -87,7 +87,7 @@ def deploy_cfn(name, cfn, params, tags, creds, region):
         raise
 
 
-def put_item(table, file, assumed_credentials, region):
+def put_item_file(table, file, assumed_credentials, region):
     try:
         with open(file, 'r') as json_doc:
             json_doc_string = json_doc.read()
@@ -95,15 +95,23 @@ def put_item(table, file, assumed_credentials, region):
             json_doc_object = json.loads(json_doc_string)
             logger.debug("Loaded JSON from file: {}".format(json_doc_object))
 
-        if json_doc_object:
-            dynamodb = boto3_resource('dynamodb', assumed_credentials, region)
-            dynamodb_table = dynamodb.Table(table)
-            dynamodb_table.put_item(
-                Item=json_doc_object
-            )
-            logger.info("inserted sample application item into DynamoDB table: {}".format(table))
     except Exception as e:
-        logger.error('Failure putting object {} in table {}: {}'.format(object, table, e))
+        logger.error('Failure opening file {} and reading json object: {}'.format(file, e))
+        raise
+
+    ddb_put_item(assumed_credentials, json_doc_object, region, table)
+
+
+def ddb_put_item(assumed_credentials, json_doc_object, region, table):
+    try:
+        dynamodb = boto3_resource('dynamodb', assumed_credentials, region)
+        dynamodb_table = dynamodb.Table(table)
+        dynamodb_table.put_item(
+            Item=json_doc_object
+        )
+        logger.info("inserted sample application item into DynamoDB table: {}".format(table))
+    except Exception as e:
+        logger.error('Failure putting object {} into table {}: {}'.format(json_doc_object, table, e))
         raise
 
 

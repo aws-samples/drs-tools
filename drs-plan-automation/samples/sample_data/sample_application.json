@@ -5,6 +5,8 @@
   "KeyName": "Application",
   "KeyValue": "sample",
   "Owner": "myemail@example.com",
+  "Account": "012345678912",
+  "Region": "us-west-2",
   "SnsTopic": "",
   "Plans": [
     {
@@ -36,7 +38,7 @@
                     "Recovery"
                   ],
                   "Description": [
-                    "This is a test OpsItem created from a PostWaveAction from the DRS PLan Automation solution Database wave"
+                    "This is a test OpsItem created from a PostWaveAction from the DRS Plan Automation solution Database wave"
                   ],
                   "Priority": [
                     "1"
@@ -61,7 +63,7 @@
                     "Recovery"
                   ],
                   "Description": [
-                    "This is a test OpsItem created from a PreWaveAction from the DRS PLan Automation solution Database Wave"
+                    "This is a test OpsItem created from a PreWaveAction from the DRS Plan Automation solution Database Wave"
                   ],
                   "Priority": [
                     "1"
@@ -94,7 +96,7 @@
                     "Recovery"
                   ],
                   "Description": [
-                    "This is a test OpsItem created from a PostWave Action from the DRS PLan Automation solution AppServer Wave"
+                    "This is a test OpsItem created from a PostWave Action from the DRS Plan Automation solution AppServer Wave"
                   ],
                   "Priority": [
                     "1"
@@ -119,7 +121,7 @@
                     "Recovery"
                   ],
                   "Description": [
-                    "This is a test OpsItem created from a PreWave action from the DRS PLan Automation solution AppServer Wave"
+                    "This is a test OpsItem created from a PreWave action from the DRS Plan Automation solution AppServer Wave"
                   ],
                   "Priority": [
                     "1"

@@ -111,12 +111,13 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
     planautomation_codebuild_buildanddeployfrontend_stack_name = helper.get_name(solution_prefix,
                                                                                  "codebuild-buildanddeployfrontend",
                                                                                  prefix, environment)
-
     planautomation_codebuild_buildanddeployfrontend_stack_template = "codebuild/BuildAndDeployFrontEnd/buildanddeployfrontend.yaml"
 
-    planautomation_iam_cloudformationrole_stack_name = helper.get_name(solution_prefix,
-                                                                       "iam-cloudformationrole")
+    planautomation_iam_cloudformationrole_stack_name = helper.get_name(solution_prefix, "iam-cloudformationrole")
     planautomation_iam_cloudformationrole_stack_template = "iam/cloudformationrole.yaml"
+
+    planautomation_iam_accountrole_stack_name = helper.get_name(solution_prefix, "iam-account-role")
+    planautomation_iam_accountrole_stack_template = "iam/drs_plan_automation_account_role.yaml"
 
     planautomation_sns_stack_name = helper.get_name(solution_prefix, "sns-notifications")
     planautomation_sns_stack_template = "sns/notifications.yaml"
@@ -172,6 +173,7 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
             helper.cleanup_stack(planautomation_codebuild_buildanddeployfrontend_stack_name, creds, region)
             helper.cleanup_stack(codecommit_stack_name, creds, region)
             helper.cleanup_stack(planautomation_iam_cloudformationrole_stack_name, creds, region)
+            helper.cleanup_stack(planautomation_iam_accountrole_stack_name, creds, region)
 
             s3_bucket_name = helper.get_stack_export(s3_stack_name, s3_bucket_name_export, creds, region)
             if s3_bucket_name:
@@ -216,6 +218,17 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
 
     helper.process_stack(prompt, planautomation_iam_cloudformationrole_stack_name,
                          planautomation_iam_cloudformationrole_stack_template, None, creds, region)
+
+    planautomation_iam_cloudformationrole_stack_params = [
+        {
+            'ParameterKey': 'SourceAccountNumber',
+            'ParameterValue': account_number
+        }
+    ]
+
+    helper.process_stack(prompt, planautomation_iam_accountrole_stack_name,
+                         planautomation_iam_accountrole_stack_template,
+                         planautomation_iam_cloudformationrole_stack_params, creds, region)
 
     helper.process_stack(prompt, planautomation_sns_stack_name,
                          planautomation_sns_stack_template, None, creds, region)
@@ -278,12 +291,16 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
                          planautomation_codepipeline_stack_template, params, creds, region)
 
     logger.info("Deployment Completed\n."
-                "A CodeCommit repository has been created with the solution configured based on your choices: https://{}.console.aws.amazon.com/codesuite/codecommit/repositories/drs-plan-automation/browse?region={}\n".format(region, region))
+                "A CodeCommit repository has been created with the solution configured based on your choices: https://{}.console.aws.amazon.com/codesuite/codecommit/repositories/drs-plan-automation/browse?region={}\n".format(
+        region, region))
 
-    logger.info("A CodePipeline has been created and linked to your CodeCommit repository:  https://{}.console.aws.amazon.com/codesuite/codepipeline/pipelines/drs-plan-automation/view?region={}\n".format(region, region))
+    logger.info(
+        "A CodePipeline has been created and linked to your CodeCommit repository:  https://{}.console.aws.amazon.com/codesuite/codepipeline/pipelines/drs-plan-automation/view?region={}\n".format(
+            region, region))
     logger.info("Once CodePipeline completes execution, your solution will be ready for use.\n"
                 "Your solution will be accessible from the CloudFront distribution deployed by CodePipeline.\n"
-                "CloudFront Console: https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region={}#/distributions\n".format(region))
+                "CloudFront Console: https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region={}#/distributions\n".format(
+        region))
 
 
 if __name__ == "__main__":

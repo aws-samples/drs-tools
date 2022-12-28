@@ -317,7 +317,7 @@ function PlanWaves({waves, setWaves}) {
     return (
         <Box sx={{flexGrow: 1}}>
             <Divider>
-                <Chip icon={<AddIcon/>} label={`${waves.length} Waves`} color="primary"
+                <Chip icon={<AddIcon/>} label={`Create - ${waves.length} Waves`} color="primary"
                       onClick={() => {
                           let newWave = JSON.parse(JSON.stringify(empty_wave));
                           setNewWave(newWave);

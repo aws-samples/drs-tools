@@ -3,8 +3,8 @@ export default {
   Description: "",
   KeyName: "",
   KeyValue: "",
-  MaxWaitTime: 300,
-  UpdateTime: 60,
+  MaxWaitTime: 1200,
+  UpdateTime: 15,
   PostWaveActions: [
   ],
   PreWaveActions: [

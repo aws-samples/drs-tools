@@ -246,7 +246,7 @@ This table stores the results from a plan automation execution.
             "DocumentName": "CreateOpsItem",
             "DocumentVersion": "1",
             "duration": "0m 1s",
-            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation-step-function",
+            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation",
             "ExecutionEndTime": "2022-12-07 19:24:58.061000+00:00",
             "ExecutionStartTime": "2022-12-07 19:24:57.211000+00:00",
             "LogFile": "",
@@ -275,7 +275,7 @@ This table stores the results from a plan automation execution.
             "DocumentName": "CreateOpsItem",
             "DocumentVersion": "1",
             "duration": "0m 1s",
-            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation-step-function",
+            "ExecutedBy": "arn:aws:sts::123456789012:assumed-role/drs-plan-automation-lambd-DRSPlanAutomationLambdaR-WE9L727DYBJ0/drs-plan-automation",
             "ExecutionEndTime": "2022-12-07 19:15:08.272000+00:00",
             "ExecutionStartTime": "2022-12-07 19:15:07.375000+00:00",
             "LogFile": "",
@@ -424,7 +424,7 @@ python3 deploy.py [OPTIONS]
 * **`--prompt`**: Whether to prompt and require you to press enter after each stack is deployed.
 * **`--help`**: Show this message and exit.
 
-## Sample Application
+## Sample Application and Sample Environment
 The solution includes a sample application and environment, so you can quickly explore and test out the solution.
 
 ![](diagrams/sample_application.png)
@@ -469,7 +469,7 @@ The sample application and environment deploys the following resources:
 
 The [deploy_sample.py](./deploy_sample.py) python deployment script can be used to automate the sample application and environment deployment.
 
-Run your python interpreter against the `deploy_sample.py` script with the required options.
+Run your python 3 interpreter against the `deploy_sample.py` script with the required options.
 
 ```shell
 python3 deploy_sample.py [OPTIONS]
@@ -498,6 +498,29 @@ Copy the CloudFront distribution URL and open it within a browser.
 Check the email address that you specified with the `--user-email` option.  You should have received an email with subject **Your temporary password** from Amazon Cognito.  You will need to login with this password.  Cognito user registration is disabled by default.  Once you login you will be required to change the password.
 
 If you deployed the sample application with the [deploy_sample.py](./deploy_sample.py) script, then you will have a sample application already created in the solution.  If not, you can proceed to create an application, plan, and associated waves.
+
+
+## Develop and test locally
+
+You can enhance and develop the front end interface and lambda functions used in the solution locally.
+
+You should clone the CodeCommit repository that was created for you with the deployed solution.  The CodeCommit repository is linked to CodePipeline to initiate a deployment on commit to the `main` branch.
+
+You should develop and test locally against your cloned CodeCommit repository in a feature branch.  When you are ready to integrate your changes you should commit, push, and merge the branch into the main branch to initiate a deployment.  
+
+### Frontend React Interface Local Development
+
+Follow these steps to configure, deploy, develop, and test the solution locally.
+
+1.  Update the [aws-exports.js](./fe/src/aws-exports.js) file with your deployed Amazon Cognito User Pool configuration.
+    You must update the config file with your deployed cognito user pool so that your locally deployed interface can authenticate you.
+2.  Install the application package dependencies
+    Install the application dependencies by:
+    a. Change to the src directory:  `cd fe/src`
+    b. Install the dependencies: `npm install`
+3.  Start the local webserver.  You can serve the frontend interface locally with:  `npm start`
+4.  Make changes to the front end code.  As you make changes to the front end code, the local server will hotload the changes so you can iterate and update the solution.
+
 
 
 ## Troubleshooting

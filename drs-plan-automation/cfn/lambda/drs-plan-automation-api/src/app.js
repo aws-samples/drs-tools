@@ -29,6 +29,7 @@ const stepfunctions = new AWS.StepFunctions();
 
 const applicationTableName = process.env.DRS_TABLE_NAME;
 const executionTableName = process.env.DRS_EXECUTION_TABLE_NAME;
+const accountsTableName = process.env.DRS_ACCOUNTS_TABLE_NAME;
 const resultsTableName = process.env.DRS_RESULTS_TABLE_NAME;
 // if (process.env.ENV && process.env.ENV !== "NONE") {
 //   tableName = tableName + '-' + process.env.ENV;
@@ -68,6 +69,89 @@ const convertUrlType = (param, type) => {
             return param;
     }
 }
+
+/*************************************
+ * HTTP Get method for list accounts *
+ *************************************/
+
+app.get("/accounts", function (req, res) {
+
+    let queryParams = {
+        TableName: accountsTableName
+    }
+
+    dynamodb.scan(queryParams, (err, data) => {
+        if (err) {
+            console.log("ERROR: " + JSON.stringify(err))
+            res.statusCode = 500;
+            res.json({error: 'Could not load accounts: ' + err});
+        } else {
+            console.log("SUCCESS: " + JSON.stringify(data))
+            res.json({success: 'account list succeeded', data: data.Items});
+        }
+    });
+});
+
+
+/************************************
+ * HTTP put method for insert account *
+ *************************************/
+
+app.put("/accounts", function (req, res) {
+
+    console.log("put data received: " + JSON.stringify(req.body));
+    try {
+        if ("account" in req.body) {
+            let account = JSON.parse(JSON.stringify(req.body.account));
+
+            let putItemParams = {
+                TableName: accountsTableName,
+                Item: account
+            }
+            dynamodb.put(putItemParams, (err, data) => {
+                if (err) {
+                    res.statusCode = 500;
+                    res.json({error: err});
+                } else {
+                    res.json({success: `new account added, AccountId: ${account.AccountId}`, data: account})
+                }
+            });
+        } else {
+            res.json({error: "account to create or update not received"});
+        }
+    } catch (e) {
+        console.log("An exception occurred trying to add new account record: " + e);
+    }
+});
+
+
+/**************************************
+ * HTTP remove method to delete account *
+ ***************************************/
+
+app.delete("/accounts", function (req, res) {
+
+    console.log("delete data query params received: " + JSON.stringify(req.body));
+
+    if ("AccountId" in req.body) {
+        let removeItemParams = {
+            TableName: accountsTableName,
+            Key: {'AccountId': req.body.AccountId}
+        }
+        console.log("delete ddb params: " + removeItemParams)
+        dynamodb.delete(removeItemParams, (err, data) => {
+            if (err) {
+                res.statusCode = 500;
+                res.json({error: err});
+            } else {
+                res.json({success: "deleted account with id:" + req.body.AccountId});
+            }
+        });
+
+    } else {
+        res.json({error: "error no AccountId specified in request"});
+    }
+});
 
 
 /********************************

@@ -124,9 +124,17 @@ def deploy(source_region, solution_region, prefix, environment, prompt, cleanup)
     logger.info("Deploying sample environment with VPC, subnets, and EC2 instances with DRS agent installed.")
     helper.process_stack(prompt, sample_environment_stack_name, sample_environment_stack_template, None, creds, source_region)
     logger.info("Inserting sample application data into DynamoDB table")
-    helper.put_item('drs-plan-automation-applications', 'samples/sample_data/sample_application.json', creds, solution_region)
+    helper.put_item_file('drs-plan-automation-applications', 'samples/sample_data/sample_application.json', creds, solution_region)
     logger.info("Inserting sample result object into DynamoDB table")
-    helper.put_item('drs-plan-automation-results', 'samples/sample_data/sample_result.json', creds, solution_region)
+    helper.put_item_file('drs-plan-automation-results', 'samples/sample_data/sample_result.json', creds, solution_region)
+    logger.info("Inserting solution account object into DynamoDB table")
+    account_record = {
+        'AccountId': account_number,
+        'Region': solution_region
+    }
+    helper.ddb_put_item(creds,account_record,solution_region, 'drs-plan-automation-accounts')
+
+
     logger.info(
         "Sample Deployment Completed.\n"
         "The source environment EC2 instances will take approximately 20 minutes to complete their initial synch to DRS before they are ready to be used in a drill / recovery.\n"        
