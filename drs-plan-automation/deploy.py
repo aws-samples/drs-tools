@@ -52,14 +52,15 @@ if hard_stop:
     exit(1)
 
 solution_prefix = "drs-plan-automation"
-
+deploy_config_file_path = os.path.join("./", 'deploy.json')
+previous_deploy_params = helper.read_json_file(deploy_config_file_path)
 
 @click.command()
 @click.option("--allowed-cidrs", required=False, default="",
               help="The allowed IP address CIDRs that have access to the cloudfront hosted front end interface.  Login is still required even if you have network access. Specify 0.0.0.0/0 to allow all ip addresses with access to front end user interface.")
-@click.option("--user-email", required=True, default=None,
+@click.option("--user-email", required=(False if previous_deploy_params else True), default=None,
               help="The email address for the cognito user for the solution.  A new temporary password will be sent to this user to login to the solution")
-@click.option("--solution-region", required=True, default=None,
+@click.option("--solution-region", required=(False if previous_deploy_params else True), default=None,
               help="The region where the plan automation solution should be deployed.  This should be the same as the target DRS region")
 @click.option("--prefix", required=False, default=None,
               help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
@@ -70,7 +71,30 @@ solution_prefix = "drs-plan-automation"
 @click.option('--prompt', required=False, is_flag=True,
               help="Whether to prompt and require you to press enter after each stack is deployed.")
 def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solution_region):
+    if not cleanup:
+        logger.info("Writing deployment options to deploy.json")
+        deployment_options = {
+            'allowed_cidrs': allowed_cidrs,
+            'user_email': user_email,
+            'solution_region': solution_region,
+            'prefix': prefix,
+            'environment': environment
+        }
+        helper.update_json_file(deploy_config_file_path, deployment_options)
+    else:
+        if previous_deploy_params:
+            logger.info("Previous deployment parameters found:\n{}\n".format(previous_deploy_params))
+            cleanup_response = input("Do you want to use your previous deployment parameters to cleanup? (type `yes` to proceed): ")
+            if cleanup_response == "yes":
+                allowed_cidrs = previous_deploy_params['allowed_cidrs']
+                user_email = previous_deploy_params['user_email']
+                solution_region = previous_deploy_params['solution_region']
+                prefix = previous_deploy_params['prefix']
+                environment = previous_deploy_params['environment']
+
+
     region = solution_region
+
     try:
         account_number, user_id = helper.get_credential_info(creds, region)
         if account_number and user_id:
@@ -111,27 +135,28 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
     planautomation_codebuild_buildanddeployfrontend_stack_name = helper.get_name(solution_prefix,
                                                                                  "codebuild-buildanddeployfrontend",
                                                                                  prefix, environment)
+
     planautomation_codebuild_buildanddeployfrontend_stack_template = "codebuild/BuildAndDeployFrontEnd/buildanddeployfrontend.yaml"
 
-    planautomation_iam_cloudformationrole_stack_name = helper.get_name(solution_prefix, "iam-cloudformationrole")
+    planautomation_iam_cloudformationrole_stack_name = helper.get_name(solution_prefix, "iam-cloudformationrole", prefix, environment)
     planautomation_iam_cloudformationrole_stack_template = "iam/cloudformationrole.yaml"
 
-    planautomation_iam_accountrole_stack_name = helper.get_name(solution_prefix, "iam-account-role")
+    planautomation_iam_accountrole_stack_name = helper.get_name(solution_prefix, "iam-account-role", prefix, environment)
     planautomation_iam_accountrole_stack_template = "iam/drs_plan_automation_account_role.yaml"
 
-    planautomation_sns_stack_name = helper.get_name(solution_prefix, "sns-notifications")
+    planautomation_sns_stack_name = helper.get_name(solution_prefix, "sns-notifications", prefix, environment)
     planautomation_sns_stack_template = "sns/notifications.yaml"
 
-    planautomation_codepipeline_stack_name = helper.get_name(solution_prefix, "codepipeline")
+    planautomation_codepipeline_stack_name = helper.get_name(solution_prefix, "codepipeline", prefix, environment)
     planautomation_codepipeline_stack_template = "codepipeline/codepipeline.yaml"
 
-    planautomation_waf_stack_name = helper.get_name(solution_prefix, "distribution-waf")
-    planautomation_distribution_stack_name = helper.get_name(solution_prefix, "distribution")
-    planautomation_api_stack_name = helper.get_name(solution_prefix, "api")
-    planautomation_auth_stack_name = helper.get_name(solution_prefix, "auth")
-    planautomation_drsplangui_function_stack_name = helper.get_name(solution_prefix, "lambda-api")
-    planautomation_stepfunction_stack_name = helper.get_name(solution_prefix, "lambda")
-    planautomation_tables_stack_name = helper.get_name(solution_prefix, "tables")
+    planautomation_waf_stack_name = helper.get_name(solution_prefix, "distribution-waf", prefix, environment)
+    planautomation_distribution_stack_name = helper.get_name(solution_prefix, "distribution", prefix, environment)
+    planautomation_api_stack_name = helper.get_name(solution_prefix, "api", prefix, environment)
+    planautomation_auth_stack_name = helper.get_name(solution_prefix, "auth", prefix, environment)
+    planautomation_drsplangui_function_stack_name = helper.get_name(solution_prefix, "lambda-api", prefix, environment)
+    planautomation_stepfunction_stack_name = helper.get_name(solution_prefix, "lambda", prefix, environment)
+    planautomation_tables_stack_name = helper.get_name(solution_prefix, "tables", prefix, environment)
 
     s3_bucket_name_export = 'drs-s3-bucket-name'
     s3_distribution_bucket_name_export = 'drs-distribution-s3-bucket-name'
@@ -152,8 +177,10 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
             logger.info("Distribution logging bucket is: {}".format(s3_logging_bucket_name))
 
             if s3_distribution_bucket_name:
+                logger.info("Deleting objects from {}".format(s3_distribution_bucket_name))
                 helper.empty_s3_bucket(s3_distribution_bucket_name, creds, region)
             if s3_logging_bucket_name:
+                logger.info("Deleting objects from {}".format(s3_logging_bucket_name))
                 helper.empty_s3_bucket(s3_logging_bucket_name, creds, region)
 
             helper.cleanup_stack(planautomation_distribution_stack_name, creds, region)
@@ -207,11 +234,26 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
     helper.process_stack(prompt, planautomation_codebuild_validatetemplates_stack_name,
                          planautomation_codebuild_validatetemplates_stack_template, None, creds, region)
 
+    codebuild_buildanddeploylambda_params = [
+        {
+            'ParameterKey': 'StackName',
+            'ParameterValue': planautomation_stepfunction_stack_name
+        }
+    ]
+
+
     helper.process_stack(prompt, planautomation_codebuild_buildanddeploylambda_stack_name,
-                         planautomation_codebuild_buildanddeploylambda_stack_template, None, creds, region)
+                         planautomation_codebuild_buildanddeploylambda_stack_template, codebuild_buildanddeploylambda_params, creds, region)
+
+    codebuild_buildanddeploylambdaapi_params = [
+        {
+            'ParameterKey': 'StackName',
+            'ParameterValue': planautomation_drsplangui_function_stack_name
+        }
+    ]
 
     helper.process_stack(prompt, planautomation_codebuild_buildanddeploylambdaapi_stack_name,
-                         planautomation_codebuild_buildanddeploylambdaapi_stack_template, None, creds, region)
+                         planautomation_codebuild_buildanddeploylambdaapi_stack_template, codebuild_buildanddeploylambdaapi_params, creds, region)
 
     helper.process_stack(prompt, planautomation_codebuild_buildanddeployfrontend_stack_name,
                          planautomation_codebuild_buildanddeployfrontend_stack_template, None, creds, region)
@@ -234,7 +276,11 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
                          planautomation_sns_stack_template, None, creds, region)
 
     codepipeline_params = {
-        'CodePipelineStackName': planautomation_codepipeline_stack_name
+        'CodePipelineStackName': planautomation_codepipeline_stack_name,
+        'AuthStackName': planautomation_auth_stack_name,
+        'TablesDBStackName': planautomation_tables_stack_name,
+        'ApiStackName': planautomation_api_stack_name,
+        'DistributionStackName': planautomation_distribution_stack_name,
     }
     helper.update_parameter_file('codepipeline/codepipeline.json', codepipeline_params)
 
@@ -284,8 +330,25 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
         {
             'ParameterKey': 'CodePipelineStackName',
             'ParameterValue': planautomation_codepipeline_stack_name
+        },
+        {
+            'ParameterKey': 'AuthStackName',
+            'ParameterValue': planautomation_auth_stack_name
+        },
+        {
+            'ParameterKey': 'TablesDBStackName',
+            'ParameterValue': planautomation_tables_stack_name
+        },
+        {
+            'ParameterKey': 'ApiStackName',
+            'ParameterValue': planautomation_api_stack_name
+        },
+        {
+            'ParameterKey': 'DistributionStackName',
+            'ParameterValue': planautomation_distribution_stack_name
         }
     ]
+
 
     helper.process_stack(prompt, planautomation_codepipeline_stack_name,
                          planautomation_codepipeline_stack_template, params, creds, region)

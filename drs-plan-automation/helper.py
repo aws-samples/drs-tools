@@ -48,7 +48,7 @@ def get_name(solution_prefix, name, prefix=None, environment=None):
     if prefix:
         stack_name = "{}-{}".format(prefix, stack_name)
     if environment:
-        stack_name += environment
+        stack_name = "{}-{}".format(stack_name, environment)
     return stack_name
 
 
@@ -475,13 +475,14 @@ def update_parameter_file(filename, json_params):
 
 
 def update_json_file(filename, json_params):
-    with open(filename, 'r') as param_read_doc:
-        param_doc_string = param_read_doc.read()
-        logger.debug("Parameter file contents are: {}".format(param_doc_string))
-
     param_doc_json = {}
-    if param_doc_string:
-        param_doc_json = json.loads(param_doc_string)
+    if os.path.exists(filename):
+        with open(filename, 'r') as param_read_doc:
+            param_doc_string = param_read_doc.read()
+            logger.debug("Parameter file contents are: {}".format(param_doc_string))
+
+        if param_doc_string:
+            param_doc_json = json.loads(param_doc_string)
 
     logger.info("Loaded JSON from file: {}".format(param_doc_json))
 
@@ -490,6 +491,17 @@ def update_json_file(filename, json_params):
             param_doc_json[key] = json_params[key]
         param_write_doc.write(json.dumps(param_doc_json))
         logger.info("Wrote file {} with json: {}".format(filename, param_doc_json))
+
+def read_json_file(filename):
+    param_doc_json = {}
+    if os.path.exists(filename):
+        with open(filename, 'r') as param_read_doc:
+            param_doc_string = param_read_doc.read()
+            logger.debug("Parameter file contents are: {}".format(param_doc_string))
+            param_doc_json = json.loads(param_doc_string)
+            return param_doc_json
+    else:
+        return None
 
 
 def create_document(name, file, tags, assumed_credentials):
