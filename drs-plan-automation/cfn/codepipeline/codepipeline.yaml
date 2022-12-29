@@ -7,6 +7,19 @@ Parameters:
   CodePipelineStackName:
     Description: CodePipeline Stack Name
     Type: String
+  AuthStackName:
+    Description: Auth Stack Name
+    Type: String
+  TablesDBStackName:
+    Description: Tables Stack Name
+    Type: String
+  ApiStackName:
+    Description: API Stack Name
+    Type: String
+  DistributionStackName:
+    Description: Distribution Stack Name
+    Type: String
+
   Application:
     Description: Application Name
     Type: String
@@ -80,7 +93,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: drs-plan-automation-tables
+                StackName: !Ref TablesDBStackName
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/dynamodb/tables.yaml
@@ -170,7 +183,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: drs-plan-automation-api
+                StackName: !Ref ApiStackName
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/apigateway/drs-plan-automation-api.yaml
@@ -189,7 +202,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: drs-plan-automation-auth
+                StackName: !Ref AuthStackName
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/cognito/gui-auth.yaml
@@ -211,7 +224,7 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: drs-plan-automation-distribution
+                StackName: !Ref DistributionStackName
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 OutputFileName: distribution.json

@@ -53,11 +53,13 @@ if hard_stop:
 
 solution_prefix = "drs-plan-automation"
 
+deploy_config_file_path = os.path.join("./", 'deploy_sample.json')
+previous_deploy_params = helper.read_json_file(deploy_config_file_path)
 
 @click.command()
-@click.option("--source-region", required=True, default=None,
+@click.option("--source-region", required=(False if previous_deploy_params else True), default=None,
               help="The region where the sample EC2 environment should be deployed, this should be different from the DRS target DR region")
-@click.option("--solution-region", required=True, default=None,
+@click.option("--solution-region", required=(False if previous_deploy_params else True), default=None,
               help="The region where the plan automation solution is deployed.  This should be the same as the target DRS region")
 @click.option("--prefix", required=False, default=None,
               help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
@@ -68,6 +70,27 @@ solution_prefix = "drs-plan-automation"
 @click.option('--prompt', required=False, is_flag=True,
               help="Whether to prompt and require you to press enter after each stack is deployed.")
 def deploy(source_region, solution_region, prefix, environment, prompt, cleanup):
+    if not cleanup:
+        logger.info("Writing deployment options to deploy_sample.json")
+        deployment_options = {
+            'source_region': source_region,
+            'solution_region': solution_region,
+            'prefix': prefix,
+            'environment': environment
+        }
+        deploy_sample_config_file_path = os.path.join("./", 'deploy_sample.json')
+        helper.update_json_file(deploy_sample_config_file_path, deployment_options)
+    else:
+        previous_deploy_params = helper.read_json_file(deploy_config_file_path)
+        if previous_deploy_params:
+            logger.info("Previous deployment parameters found:\n{}\n".format(previous_deploy_params))
+            cleanup_response = input("Do you want to use your previous deployment parameters to cleanup? (type `yes` to proceed): ")
+            if cleanup_response == "yes":
+                source_region = previous_deploy_params['source_region']
+                solution_region = previous_deploy_params['solution_region']
+                prefix = previous_deploy_params['prefix']
+                environment = previous_deploy_params['environment']
+
     try:
         account_number, user_id = helper.get_credential_info(creds, solution_region)
         if account_number and user_id:
@@ -131,7 +154,7 @@ def deploy(source_region, solution_region, prefix, environment, prompt, cleanup)
     logger.info("Inserting sample application data into DynamoDB table")
 
     file_path = os.path.join("./", 'samples/sample_data/sample_application.json')
-    helper.update_json_file('samples/sample_data/sample_application.json', account_record)
+    helper.update_json_file(file_path, account_record)
 
     helper.put_item_file('drs-plan-automation-applications', 'samples/sample_data/sample_application.json', creds, solution_region)
     logger.info("Inserting sample result object into DynamoDB table")
