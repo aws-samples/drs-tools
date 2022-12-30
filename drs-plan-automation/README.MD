@@ -5,6 +5,15 @@ This solution provides an automated, sequential approach for AWS DRS drills and 
 
 The solution enables you to organize collections of servers by tags in ordered waves, so you can recovery architectural components as groups.  Each wave can also have a sequenced set of PreWave and PostWave automation actions.  Automation actions are defined as SSM Automation runbooks providing broad flexibility for sequenced recovery.  This enables you to support and orchestrate managed services recovery and automation for AWS services such as RDS, Lambda, Route 53, S3, etc either before or after a grouped EC2 recovery completed by DRS.  
 
+### Features
+
+* Organize and define applications for your DRS source servers and sequence the recovery of your servers in multiple AWS accounts
+* Specify and execute sequenced automation before and after server recovery as SSM Automation runbooks
+* Define, copy, and test multiple recovery plans
+* Define and copy multiple sequenced plan automation waves within a plan
+* Record and reference drill / recovery results for automation and server recovery plans
+* Enhance and implement your own features using CodePipeline / CodeCommit
+
 ## Application Architecture
 The solution provides a React based UI requiring authorized login provided by Amazon Cognito.  The solution also uses AWS WAF to limit access to the defined IP addresses / CIDRs that you specify.  The solution uses API Gateway and AWS Lambda to interface with Step Functions for orchestration and DynamoDB for data capture / retrieval.
 
@@ -25,10 +34,28 @@ The primary entities in the solution are:  Applications, Plans, Waves, PreWave A
 
 The primary entities for results are similar. 
 
-Data is stored in JSON format in DynamoDB.  There are two DynamoDB tables used by the solution:
+Data is stored in JSON format in DynamoDB.  There are three DynamoDB tables used by the solution:
 
+* **drs-plan-automation-accounts**:  This table is used to store the AWS accounts and DRS regions that applications can be configured to use.
 * **drs-plan-automation-applications**:  This is the primary table used the the solution and defines your Applications and their related Plans, Waves, and PreWave / PostWave Actions.
 * **drs-plan-automation-results**:  This table is used to store drill / recovery execution results.
+
+### drs-plan-automation-accounts
+This table is used to store the AWS accounts and DRS regions that applications can be configured to use.
+
+#### Sample Item
+
+```json
+{
+  "AccountId": "012345678912",
+  "Region": "us-west-2"
+}
+```
+
+* AccountId (string) --
+  The AWS Account ID where this application and its related resources (DRS source servers, SSM Automation Runbooks) reside.
+* Region (string) --
+  The AWS region where this application and its related resources reside.
 
 ### drs-plan-automation-applications
 
@@ -41,6 +68,8 @@ Data is stored in JSON format in DynamoDB.  There are two DynamoDB tables used b
   "KeyName": "Application",
   "KeyValue": "sample",
   "Owner": "myemail@example.com",
+  "AccountId": "012345678912",
+  "Region": "us-west-2",
   "Plans": [
     {
       "PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
@@ -128,6 +157,10 @@ Data is stored in JSON format in DynamoDB.  There are two DynamoDB tables used b
   The Tag Key value that uniquely identifies DRS source servers that are a part of this application.
 * **Owner** _(string)_ --
   The email address for the owner of this application.
+* AccountId (string) --
+  The AWS Account ID where this application and its related resources (DRS source servers, SSM Automation Runbooks) reside.
+* Region (string) --
+  The AWS region where this application and its related resources reside.
 * **Plans** _(array)_ --
   An array of 0 or more plans for the application
   * <a id="planobject"></a>
@@ -194,7 +227,7 @@ Data is stored in JSON format in DynamoDB.  There are two DynamoDB tables used b
               The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
 
 ### drs-plan-automation-results
-This table stores the results from a plan automation execution.  
+This table stores the results from a plan automation execution.
 
 #### Sample Item
 ```json
@@ -218,8 +251,8 @@ This table stores the results from a plan automation execution.
       "s-51d6b65c73391918e": {}
     },
     {
-      "s-51d6b65c73391918f": {}      
-    }     
+      "s-51d6b65c73391918f": {}  
+    }   
   ],
   "status": "completed",
   "topicArn": null,
@@ -307,11 +340,11 @@ This table stores the results from a plan automation execution.
 * **AppId_PlanId** _(string)_ --
   The key for an execution result is a combination of the AppId (uuid) and PlanId (uuid) seperated by an underscore (_).
 * **ExecutionId** _(string)_ --
-  The Execute ARN for the DRSPlanAutomationStateMachine for this result.  Each plan execution is orchestrated by the DRSPlanAutomationStateMachine.   
+  The Execute ARN for the DRSPlanAutomationStateMachine for this result.  Each plan execution is orchestrated by the DRSPlanAutomationStateMachine.
 * **AppName** _(string)_ --
   The name of the application when this result was created.
 * **duration** _(string)_ --
-  The total duration for the plan automation execution, in minutes and seconds (#m #s) 
+  The total duration for the plan automation execution, in minutes and seconds (#m #s)
 * **ExecutionEndTime** _(string)_ --
   The end time for the plan automation execution, in ISO 8601 format
 * **ExecutionStartTime** _(string)_ --
@@ -319,7 +352,7 @@ This table stores the results from a plan automation execution.
 * **ExecutionStartTimeMs** _(number)_ --
   The execution start time in epoch.
 * **isDrill** _(boolean)_ --
-  Boolean value indicating whether the DRS jobs in each wave should be executed as a drill or a recovery. 
+  Boolean value indicating whether the DRS jobs in each wave should be executed as a drill or a recovery.
 * **KeyName** _(string)_ --
   The Tag key value for the application associated with this result.
 * **KeyValue** _(string)_ --
@@ -329,22 +362,22 @@ This table stores the results from a plan automation execution.
 * **Owner** _(string)_ --
   The owner of the application at the time of plan execution.
 * **planDetails** _(object)_ --
-  The plan object at the time of execution for this result, refer to the [Plan Object](#planobject) in the Applications section for details. 
+  The plan object at the time of execution for this result, refer to the [Plan Object](#planobject) in the Applications section for details.
 * **SourceServers** _(array)_ --
-  The DRS source servers for the application key name and key value specified.  
+  The DRS source servers for the application key name and key value specified.
   * **"<_SourceServerID_>"** _(object)_ --
-    The details for the source server at the time of execution, with key SourceServerID and value set to the object returned by [describe_source_server()](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/drs.html#drs.Client.describe_source_servers) 
+    The details for the source server at the time of execution, with key SourceServerID and value set to the object returned by [describe_source_server()](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/drs.html#drs.Client.describe_source_servers)
 * **status** _(string)_ --
-  The overall status for the plan automation execution.  Possible values are `completed`, `failed`, `timeout` 
+  The overall status for the plan automation execution.  Possible values are `completed`, `failed`, `timeout`
 * **topicArn** _(string)_ --
   The SNS Topic ARN that will receive plan automation execution status updates.
 * **user** _(string)_ --
   The email address of the application owner at the time of execution.
 * **Waves** _(array)_ --
   An array of objects containing the results for each wave execution.
-  * Wave result (object) 
+  * Wave result (object)
     * **drs** _(object)_ --
-    The DRS job results and status for the wave.  The DRS job for the wave selects DRS source servers tagged with the Tag Key and Tag Value specified for the wave.    
+      The DRS job results and status for the wave.  The DRS job for the wave selects DRS source servers tagged with the Tag Key and Tag Value specified for the wave.
       * **job** _(object)_ --
         The DRS job details for the wave, as returned by ..
       * **status** _(string)_ --
@@ -370,7 +403,7 @@ This table stores the results from a plan automation execution.
           An array of 0 or more log messages associated with this PreWaveAction execution, such as errors during execution, timeouts, etc
     * **PostWaveActions** _(array)_ --
       An array of objects containing the results for each PostWaveAction execution.
-      * PostWaveAction result (object) 
+      * PostWaveAction result (object)
         * **job** _(object)_ --
           The SSM Automation Execution details for the PostWaveAction, as returned by ..
         * **status** _(string)_ --
@@ -381,6 +414,7 @@ This table stores the results from a plan automation execution.
       An array of 0 or more DRS Source Server IDs that will be included in the DRS drill / recovery job for the wave
     * **status** _(string)_ --
       The status for the Wave.  Possible values are `completed`, `failed`, `timeout`
+
 
 ## CI / CD Architecture
 The solution deploys a complete CI/CD management solution using CodeCommit, CodePipeline, CodeBuild, and CloudFormation.  You can use this pipeline to iteratively make controlled changes and enhance your plan automation solution as needed.
