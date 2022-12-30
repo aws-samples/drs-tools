@@ -7,7 +7,7 @@ The solution enables you to organize collections of servers by tags in ordered w
 
 ### Features
 
-* Organize and define applications for your DRS source servers and sequence the recovery of your servers in multiple AWS accounts
+* Organize and define automated disaster recovery plans for your applications using DRS in multiple AWS accounts and sequence the recovery of your servers and automation 
 * Specify and execute sequenced automation before and after server recovery as SSM Automation runbooks
 * Define, copy, and test multiple recovery plans
 * Define and copy multiple sequenced plan automation waves within a plan
@@ -52,9 +52,9 @@ This table is used to store the AWS accounts and DRS regions that applications c
 }
 ```
 
-* AccountId (string) --
+* **AccountId** (string) --
   The AWS Account ID where this application and its related resources (DRS source servers, SSM Automation Runbooks) reside.
-* Region (string) --
+* **Region** (string) --
   The AWS region where this application and its related resources reside.
 
 ### drs-plan-automation-applications
@@ -157,9 +157,9 @@ This table is used to store the AWS accounts and DRS regions that applications c
   The Tag Key value that uniquely identifies DRS source servers that are a part of this application.
 * **Owner** _(string)_ --
   The email address for the owner of this application.
-* AccountId (string) --
+* **AccountId** (string) --
   The AWS Account ID where this application and its related resources (DRS source servers, SSM Automation Runbooks) reside.
-* Region (string) --
+* **Region** (string) --
   The AWS region where this application and its related resources reside.
 * **Plans** _(array)_ --
   An array of 0 or more plans for the application
