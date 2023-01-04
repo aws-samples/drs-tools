@@ -1,7 +1,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-Description: AWS DRS Solution CI/CD Automation Pipeline
+Description: AWS drs-plan-automation CI/CD Automation Pipeline
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   CodePipelineStackName:
@@ -19,11 +19,13 @@ Parameters:
   DistributionStackName:
     Description: Distribution Stack Name
     Type: String
-
   Application:
     Description: Application Name
     Type: String
     Default:  DRS
+  env:
+    Description: Initial environment
+    Type: String
 
 Resources:
   drsplanautomation:
@@ -61,6 +63,19 @@ Resources:
                 BranchName: main
               OutputArtifacts:
                 - Name: SourceArtifacts
+        - Name: Validate
+          Actions:
+            - InputArtifacts:
+                - Name: SourceArtifacts
+              Name: Static_Analysis
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:  ValidateTemplates
+              RunOrder: 1
         - Name: UpdateDRSPipeline
           Actions:
             - InputArtifacts:
@@ -78,10 +93,8 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/codepipeline/codepipeline.yaml
                 TemplateConfiguration: SourceArtifacts::cfn/codepipeline/codepipeline.json
-              #                OutputFileName:
-              #                ParameterOverrides:
               RunOrder: 1
-        - Name: DeployDRSTables
+        - Name: Development
           Actions:
             - InputArtifacts:
                 - Name: SourceArtifacts
@@ -97,39 +110,7 @@ Resources:
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/dynamodb/tables.yaml
-              #                OutputFileName:
-              #                ParameterOverrides:
-              RunOrder: 1
-        #            - InputArtifacts:
-        #                - Name: SourceArtifacts
-        #              Name: DeployDRSPlanStepFunction
-        #              ActionTypeId:
-        #                Category: Deploy
-        #                Owner: AWS
-        #                Version: '1'
-        #                Provider: CloudFormation
-        #              Configuration:
-        #                ActionMode: CREATE_UPDATE
-        #                StackName: drs-plan-automation-stepfunction
-        #                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
-        #                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
-        #                TemplatePath: SourceArtifacts::cfn/lambda/drs-plan-automation/drs-plan-automation.yaml
-        #                TemplateConfiguration: SourceArtifacts::cfn/lambda/drs-plan-automation/drs-plan-automation.json
-        #              #                OutputFileName:
-        #              #                ParameterOverrides:
-        #              RunOrder: 2
-        - Name: TestBuildDeployLambda
-          Actions:
-            - InputArtifacts:
-                - Name: SourceArtifacts
-              Name: Static_Analysis
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: '1'
-                Provider: CodeBuild
-              Configuration:
-                ProjectName:  ValidateTemplates
+                TemplateConfiguration: !Sub "SourceArtifacts::cfn/dynamodb/tables-${env}.json"
               RunOrder: 1
             - InputArtifacts:
                 - Name: SourceArtifacts
@@ -140,7 +121,7 @@ Resources:
                 Version: '1'
                 Provider: CodeBuild
               Configuration:
-                ProjectName:  BuildAndDeployLambda
+                ProjectName:  !Sub "BuildAndDeployLambda-${env}"
               RunOrder: 2
             - InputArtifacts:
                 - Name: SourceArtifacts
@@ -151,28 +132,8 @@ Resources:
                 Version: '1'
                 Provider: CodeBuild
               Configuration:
-                ProjectName:  BuildAndDeployLambdaApi
+                ProjectName:  !Sub "BuildAndDeployLambdaApi-${env}"
               RunOrder: 3
-        - Name: DeployDRSPlanAPI
-          Actions:
-#            - InputArtifacts:
-#                - Name: SourceArtifacts
-#              Name: DeployDRSPlanAPIFunction
-#              ActionTypeId:
-#                Category: Deploy
-#                Owner: AWS
-#                Version: '1'
-#                Provider: CloudFormation
-#              Configuration:
-#                ActionMode: CREATE_UPDATE
-#                StackName: drs-plan-automation-function
-#                RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
-#                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
-#                TemplatePath: SourceArtifacts::cfn/lambda/drs-plan-automation-api/drs-plan-automation-api.yaml
-#                TemplateConfiguration: SourceArtifacts::cfn/lambda/drs-plan-automation-api/drs-plan-automation-api.json
-#              #                OutputFileName:
-#              #                ParameterOverrides:
-#              RunOrder: 3
             - InputArtifacts:
                 - Name: SourceArtifacts
               Name: DeployDRSPlanAPI
@@ -187,7 +148,7 @@ Resources:
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/apigateway/drs-plan-automation-api.yaml
-                TemplateConfiguration: SourceArtifacts::cfn/apigateway/drs-plan-automation-api.json
+                TemplateConfiguration: !Sub "SourceArtifacts::cfn/apigateway/drs-plan-automation-api-${env}.json"
                 OutputFileName: apigateway.json
               OutputArtifacts:
                 - Name: DeployDRSPlanAPI
@@ -206,14 +167,12 @@ Resources:
                 RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole"
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 TemplatePath: SourceArtifacts::cfn/cognito/gui-auth.yaml
-                TemplateConfiguration: SourceArtifacts::cfn/cognito/gui-auth.json
+                TemplateConfiguration: !Sub "SourceArtifacts::cfn/cognito/gui-auth-${env}.json"
                 OutputFileName: cognito.json
               OutputArtifacts:
                 - Name: DeployDRSPlanAuth
               #                ParameterOverrides:
               RunOrder: 5
-        - Name: DRSFrontEnd
-          Actions:
             - InputArtifacts:
                 - Name: SourceArtifacts
               Name: DeployDRSPlanDistribution
@@ -229,10 +188,10 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 OutputFileName: distribution.json
                 TemplatePath: SourceArtifacts::cfn/cloudfront/gui-distribution.yaml
-                TemplateConfiguration: SourceArtifacts::cfn/cloudfront/gui-distribution.json
+                TemplateConfiguration: !Sub "SourceArtifacts::cfn/cloudfront/gui-distribution-${env}.json"
               OutputArtifacts:
                 - Name: DeployDRSPlanDistribution
-              RunOrder: 1
+              RunOrder: 6
             - InputArtifacts:
                 - Name: SourceArtifacts
                 - Name: DeployDRSPlanAuth
@@ -245,9 +204,9 @@ Resources:
                 Version: '1'
                 Provider: CodeBuild
               Configuration:
-                ProjectName:  BuildAndDeployFrontEnd
+                ProjectName:  !Sub "BuildAndDeployFrontEnd-${env}"
                 PrimarySource: SourceArtifacts
-              RunOrder: 2
+              RunOrder: 7
   CodePipelineManageStepsRole:
     Type: AWS::IAM::Role
     Properties:
@@ -301,9 +260,9 @@ Resources:
                   - codebuild:ListBuildsForProject
                 Resource:
                   - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/ValidateTemplates"
-                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployLambda"
-                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployLambdaApi"
-                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployFrontEnd"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployLambda-*"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployLambdaApi-*"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildAndDeployFrontEnd-*"
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -363,7 +322,7 @@ Resources:
       Targets:
         -
           Arn:
-            Fn::ImportValue: drs-plan-automation-sns-topic-arn
+            Fn::ImportValue: drs-plan-automation-pipeline-sns-topic-arn
           Id: "NotifyFailedPipeline"
           InputTransformer:
             InputTemplate: !Sub |

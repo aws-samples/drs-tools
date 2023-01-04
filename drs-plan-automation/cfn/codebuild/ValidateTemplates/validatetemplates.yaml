@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "CodeBuild project to validate CloudFormation templates and policies for DRS solution"
+Description: "CodeBuild project to validate CloudFormation templates and policies for drs-plan-automation"
 Parameters:
   Application:
     Description: Application Name
     Type: String
-    Default:  DRS Solution
+    Default:  drs-plan-automation
 
 Resources:
   CodeBuildValidateTemplates:

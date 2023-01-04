@@ -2,17 +2,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Create role allowing the drs_plan_automation AWS lambda function to assume this role and perform DRS job operations, SSM execution for PreWave / PostWave, etc in the account.
+Description: Create role allowing the drs-plan-automation AWS lambda function to assume this role and perform DRS job operations, SSM execution for PreWave / PostWave, etc in the account.
 Parameters:
+  DrsAssumeRoleName:
+    Description: The name of the AWS IAM role in DRS accounts allowing the solution to perform AWS operations in the account (e.g. DRS recovery, SSM Automation initiation)
+    Type: String
+    Default: "drs-plan-automation-account-role"
   SourceAccountNumber:
     Description: The AWS Account ID where the DRS Plan Automation solution is deployed and drs_plan_automation AWS Lambda function is running.
+    Type: String
+  env:
     Type: String
 
 Resources:
   EC2ToDRSTagReplicatorAccountRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName:  "drs_plan_automation_account_role"
+      RoleName:  !Sub "${DrsAssumeRoleName}-${env}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -22,6 +28,8 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticDisasterRecoveryConsoleFullAccess
       Policies:
         - PolicyName: PerformDRSPlanAutomationOperations
           PolicyDocument:
@@ -45,6 +53,13 @@ Resources:
                 Action:
                   - ssm:DescribeAutomationExecutions
                   - ssm:StartAutomationExecutions
+                  - ssm:StartAutomationExecution
+                Resource: "*"
+# You should add the IAM permissions required by the PreWave and PostWave SSM Automation Runbooks here.
+              - Sid: SSMAutomationPermissions
+                Effect: Allow
+                Action:
+                  - ssm:CreateOpsItem
                 Resource: "*"
 
 

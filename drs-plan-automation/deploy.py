@@ -58,14 +58,14 @@ previous_deploy_params = helper.read_json_file(deploy_config_file_path)
 @click.command()
 @click.option("--allowed-cidrs", required=False, default="",
               help="The allowed IP address CIDRs that have access to the cloudfront hosted front end interface.  Login is still required even if you have network access. Specify 0.0.0.0/0 to allow all ip addresses with access to front end user interface.")
-@click.option("--user-email", required=(False if previous_deploy_params else True), default=None,
+@click.option("--user-email", required=True, default=previous_deploy_params.get('user_email', None),
               help="The email address for the cognito user for the solution.  A new temporary password will be sent to this user to login to the solution")
-@click.option("--solution-region", required=(False if previous_deploy_params else True), default=None,
+@click.option("--solution-region", required=True, default=previous_deploy_params.get('solution_region', None),
               help="The region where the plan automation solution should be deployed.  This should be the same as the target DRS region")
-@click.option("--prefix", required=False, default=None,
+@click.option("--prefix", required=False, default=previous_deploy_params.get('prefix', None),
               help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
-@click.option("--environment", required=False, default=None,
-              help="The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'")
+@click.option("--environment", required=False, default=previous_deploy_params.get('environment', "dev"),
+              help="The initial environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev.  This is also the first environment in the CodePipeline'")
 @click.option('--cleanup', required=False, is_flag=True,
               help="Cleanup the deployed stacks and AWS resources.  If you deployed with the --prefix or --environment option, then you must cleanup with the same option parameters")
 @click.option('--prompt', required=False, is_flag=True,
@@ -142,7 +142,7 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
     planautomation_iam_cloudformationrole_stack_template = "iam/cloudformationrole.yaml"
 
     planautomation_iam_accountrole_stack_name = helper.get_name(solution_prefix, "iam-account-role", prefix, environment)
-    planautomation_iam_accountrole_stack_template = "iam/drs_plan_automation_account_role.yaml"
+    planautomation_iam_accountrole_stack_template = "iam/drs-plan-automation-account-role.yaml"
 
     planautomation_sns_stack_name = helper.get_name(solution_prefix, "sns-notifications", prefix, environment)
     planautomation_sns_stack_template = "sns/notifications.yaml"
@@ -216,7 +216,8 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
         exit(0)
 
     logger.info(
-        "\nOptions:\nRegion: {}\nPrefix: {}\nEnvironment Specified: {}\nPrompted Deployment: {}\n".format(
+        "\nOptions:\nAllowed CIDRs: {}\nRegion: {}\nPrefix: {}\nEnvironment Specified: {}\nPrompted Deployment: {}\n".format(
+            [allowed_cidrs if allowed_cidrs else "All"][0],
             region,
             prefix,
             environment,
@@ -226,6 +227,63 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
 
     input("Press enter to proceed with deployment to account {} in region {}: ".format(
         account_number, region))
+
+    default_codebuild_buildspec = os.path.join(helper.CFN_FILE_DIR, 'codebuild/BuildAndDeployFrontEnd/buildspec-buildanddeployfrontend.yml')
+    env_codebuild_buildspec = os.path.join(helper.CFN_FILE_DIR, 'codebuild/BuildAndDeployFrontEnd/buildspec-buildanddeployfrontend-{}.yml'.format(environment))
+    shutil.copyfile(default_codebuild_buildspec, env_codebuild_buildspec)
+
+    default_codebuild_buildspec = os.path.join(helper.CFN_FILE_DIR, 'codebuild/BuildAndDeployLambda/buildspec-buildanddeploy.yml')
+    env_codebuild_buildspec = os.path.join(helper.CFN_FILE_DIR, 'codebuild/BuildAndDeployLambda/buildspec-buildanddeploy-{}.yml'.format(environment))
+    shutil.copyfile(default_codebuild_buildspec, env_codebuild_buildspec)
+
+    default_codebuild_buildspec = os.path.join(helper.CFN_FILE_DIR, 'codebuild/BuildAndDeployLambdaApi/buildspec-buildanddeploy.yml')
+    env_codebuild_buildspec = os.path.join(helper.CFN_FILE_DIR, 'codebuild/BuildAndDeployLambdaApi/buildspec-buildanddeploy-{}.yml'.format(environment))
+    shutil.copyfile(default_codebuild_buildspec, env_codebuild_buildspec)
+
+
+    apigw_default_param_file = os.path.join(helper.CFN_FILE_DIR, 'apigateway/drs-plan-automation-api.json')
+    apigw_env_param_file =  'apigateway/drs-plan-automation-api-{}.json'.format(environment)
+    apigw_env_param_file_abs = os.path.join(helper.CFN_FILE_DIR, apigw_env_param_file)
+    shutil.copyfile(apigw_default_param_file, apigw_env_param_file_abs)
+
+    apigw_params = {
+        'env': environment
+    }
+    helper.update_parameter_file(apigw_env_param_file, apigw_params)
+
+    cognito_default_param_file = os.path.join(helper.CFN_FILE_DIR, 'cognito/gui-auth.json')
+    cognito_env_param_file =  'cognito/gui-auth-{}.json'.format(environment)
+    cognito_env_param_file_abs = os.path.join(helper.CFN_FILE_DIR, cognito_env_param_file)
+    shutil.copyfile(cognito_default_param_file, cognito_env_param_file_abs)
+
+    cognito_params = {
+        'demoEmailAddress': user_email,
+        'env': environment
+    }
+    helper.update_parameter_file(cognito_env_param_file, cognito_params)
+
+    cf_default_param_file = os.path.join(helper.CFN_FILE_DIR, 'cloudfront/gui-distribution.json')
+    cf_env_param_file = 'cloudfront/gui-distribution-{}.json'.format(environment)
+    cf_env_param_file_abs = os.path.join(helper.CFN_FILE_DIR, cf_env_param_file)
+    shutil.copyfile(cf_default_param_file, cf_env_param_file_abs)
+
+    cf_params = {
+        'AllowedCIDRs': allowed_cidrs,
+        'env': environment
+    }
+    helper.update_parameter_file(cf_env_param_file, cf_params)
+
+
+    ddb_default_param_file = os.path.join(helper.CFN_FILE_DIR, 'dynamodb/tables.json')
+    ddb_env_param_file = 'dynamodb/tables-{}.json'.format(environment)
+    ddb_env_param_file_abs = os.path.join(helper.CFN_FILE_DIR, ddb_env_param_file)
+    shutil.copyfile(ddb_default_param_file, ddb_env_param_file_abs)
+
+    ddb_params = {
+        'env': environment
+    }
+    helper.update_parameter_file(ddb_env_param_file, ddb_params)
+
 
     helper.process_stack(prompt, kms_stack_name, kms_stack_template, None, creds, region)
 
@@ -238,6 +296,10 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
         {
             'ParameterKey': 'StackName',
             'ParameterValue': planautomation_stepfunction_stack_name
+        },
+        {
+            'ParameterKey': 'env',
+            'ParameterValue': environment
         }
     ]
 
@@ -249,31 +311,53 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
         {
             'ParameterKey': 'StackName',
             'ParameterValue': planautomation_drsplangui_function_stack_name
+        },
+        {
+            'ParameterKey': 'env',
+            'ParameterValue': environment
         }
     ]
 
     helper.process_stack(prompt, planautomation_codebuild_buildanddeploylambdaapi_stack_name,
                          planautomation_codebuild_buildanddeploylambdaapi_stack_template, codebuild_buildanddeploylambdaapi_params, creds, region)
 
+    codebuild_buildanddeployfrontend_params = [
+        {
+            'ParameterKey': 'env',
+            'ParameterValue': environment
+        }
+    ]
+
     helper.process_stack(prompt, planautomation_codebuild_buildanddeployfrontend_stack_name,
-                         planautomation_codebuild_buildanddeployfrontend_stack_template, None, creds, region)
+                         planautomation_codebuild_buildanddeployfrontend_stack_template, codebuild_buildanddeployfrontend_params, creds, region)
 
     helper.process_stack(prompt, planautomation_iam_cloudformationrole_stack_name,
                          planautomation_iam_cloudformationrole_stack_template, None, creds, region)
 
-    planautomation_iam_cloudformationrole_stack_params = [
+    planautomation_iam_accountrole_stack_params = [
         {
             'ParameterKey': 'SourceAccountNumber',
             'ParameterValue': account_number
+        },
+        {
+            'ParameterKey': 'env',
+            'ParameterValue': environment
         }
     ]
 
     helper.process_stack(prompt, planautomation_iam_accountrole_stack_name,
                          planautomation_iam_accountrole_stack_template,
-                         planautomation_iam_cloudformationrole_stack_params, creds, region)
+                         planautomation_iam_accountrole_stack_params, creds, region)
+
+    planautomation_sns_params = [
+        {
+            'ParameterKey': 'env',
+            'ParameterValue': environment
+        }
+    ]
 
     helper.process_stack(prompt, planautomation_sns_stack_name,
-                         planautomation_sns_stack_template, None, creds, region)
+                         planautomation_sns_stack_template, planautomation_sns_params, creds, region)
 
     codepipeline_params = {
         'CodePipelineStackName': planautomation_codepipeline_stack_name,
@@ -281,18 +365,10 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
         'TablesDBStackName': planautomation_tables_stack_name,
         'ApiStackName': planautomation_api_stack_name,
         'DistributionStackName': planautomation_distribution_stack_name,
+        'env': environment
     }
     helper.update_parameter_file('codepipeline/codepipeline.json', codepipeline_params)
 
-    cognito_params = {
-        'demoEmailAddress': user_email
-    }
-    helper.update_parameter_file('cognito/gui-auth.json', cognito_params)
-
-    cf_params = {
-        'AllowedCIDRs': allowed_cidrs
-    }
-    helper.update_parameter_file('cloudfront/gui-distribution.json', cf_params)
 
     logger.info("Zipping code for CodeCommit baseline")
     if prompt:
@@ -346,6 +422,10 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
         {
             'ParameterKey': 'DistributionStackName',
             'ParameterValue': planautomation_distribution_stack_name
+        },
+        {
+            'ParameterKey': 'env',
+            'ParameterValue': environment
         }
     ]
 

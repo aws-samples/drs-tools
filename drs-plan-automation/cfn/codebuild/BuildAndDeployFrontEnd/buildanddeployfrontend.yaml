@@ -7,13 +7,15 @@ Parameters:
   Application:
     Description: Application Name
     Type: String
-    Default:  DRS Solution
+    Default:  drs-plan-automation
+  env:
+    Type: String
 
 Resources:
   CodeBuildBuildAndDeployFrontEnd:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name:  BuildAndDeployFrontEnd
+      Name:  !Sub "BuildAndDeployFrontEnd-${env}"
       Description: "Build and deploy front end react GUI for DRS Plan Automation"
       ServiceRole: !GetAtt CodeBuildBuildAndDeployFrontEndExecutionRole.Arn
       Artifacts:
@@ -28,9 +30,11 @@ Resources:
           - Name: drs_s3_bucket_name
             Value:
               Fn::ImportValue: "drs-s3-bucket-name"
+          - Name: env
+            Value: !Ref env
       Source:
         Type: CODEPIPELINE
-        BuildSpec: cfn/codebuild/BuildAndDeployFrontEnd/buildspec-buildanddeployfrontend.yml
+        BuildSpec: !Sub "cfn/codebuild/BuildAndDeployFrontEnd/buildspec-buildanddeployfrontend-${env}.yml"
       TimeoutInMinutes: 30
       Tags:
         - Key: Application

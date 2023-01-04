@@ -1,10 +1,5 @@
 {
   "Parameters": {
-    "CodePipelineStackName": "",
-    "AuthStackName": "",
-    "TablesDBStackName": "",
-    "ApiStackName": "",
-    "DistributionStackName": "",
     "env": ""
   },
   "Tags": {

@@ -7,6 +7,8 @@ Parameters:
   AllowedCIDRs:
     Description: Allowed Public CIDRs to DRS interface comma separated list (e.g. "192.0.2.44/32", "192.0.2.0/24", "192.0.0.0/16").  If not specified, WAF will not be created and attached to distribution.
     Type: String
+  env:
+    Type: String
 Conditions:
   CreateWAF: !Not [!Equals [!Ref AllowedCIDRs, ""]]
 
@@ -187,32 +189,32 @@ Outputs:
     Value: !Ref s3bucket
     Description: "S3 Bucket Name for Plan Automation Distribution"
     Export:
-      Name: "drs-distribution-s3-bucket-name"
+      Name: !Sub "drs-distribution-s3-bucket-name-${env}"
 
 
   DRSDistributionS3BucketArn:
     Value: !GetAtt s3bucket.Arn
     Description: "S3 Bucket Arn for Plan Automation Distribution"
     Export:
-      Name: "drs-distribution-s3-bucket-arn"
+      Name: !Sub "drs-distribution-s3-bucket-arn-${env}"
 
 
   DRSDistributionLoggingS3BucketName:
     Value: !Ref loggingbucket
     Description: "S3 Logging Bucket Name for Plan Automation Distribution"
     Export:
-      Name: "drs-distribution-s3-logging-bucket-name"
+      Name: !Sub "drs-distribution-s3-logging-bucket-name-${env}"
 
 
   DRSDistributionLoggingS3BucketArn:
     Value: !GetAtt loggingbucket.Arn
     Description: "S3 Logging Bucket Arn for Plan Automation Distribution"
     Export:
-      Name: "drs-distribution-s3-logging-bucket-arn"
+      Name: !Sub "drs-distribution-s3-logging-bucket-arn-${env}"
 
   drswafarn:
     Condition: CreateWAF
     Value: !Ref drswaf
     Description: "WAF for DRS CloudFront Distribution"
     Export:
-      Name: "drs-plan-automation-waf"
+      Name: !Sub "drs-plan-automation-waf-${env}"

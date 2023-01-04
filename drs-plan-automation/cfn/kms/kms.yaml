@@ -1,13 +1,12 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-
 AWSTemplateFormatVersion: "2010-09-09"
-Description:  "KMS Key for DRS Solution Related AWS resources"
+Description:  "KMS Key for drs-plan-automation Related AWS resources"
 Resources:
   KMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: "KMS Key used by DRS solution related AWS services"
+      Description: "KMS Key used by drs-plan-automation related AWS services"
       Enabled: true
       EnableKeyRotation: true
       KeyPolicy:
@@ -22,28 +21,16 @@ Resources:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             Action: 'kms:*'
             Resource: '*'
-  DRSKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub "alias/drs-plan-automation"
-      TargetKeyId: !Ref KMSKey
 
 Outputs:
   KmsKeyArn:
     Value: !GetAtt [ 'KMSKey', 'Arn' ]
-    Description: "KMS Key Arn for DRS solution related AWS resources"
+    Description: "KMS Key Arn for drs-plan-automation related AWS resources"
     Export:
       Name: "drs-kms-key-arn"
 
   KmsKeyID:
     Value: !Ref KMSKey
-    Description: "KMS Key ID for DRS solution related AWS resources"
+    Description: "KMS Key ID for drs-plan-automation related AWS resources"
     Export:
       Name: "drs-kms-id"
-
-
-  KmsKeyAlias:
-    Value: !Ref DRSKeyAlias
-    Description: "KMS Key alias for DRS solution related AWS resources"
-    Export:
-      Name: "drs-kms-alias"

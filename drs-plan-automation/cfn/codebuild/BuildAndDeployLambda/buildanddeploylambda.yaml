@@ -7,16 +7,18 @@ Parameters:
   Application:
     Description: Application Name
     Type: String
-    Default:  DRS Solution
+    Default:  drs-plan-automation
   StackName:
     Description: Stack Name
+    Type: String
+  env:
     Type: String
 
 Resources:
   CodeBuildBuildAndDeployLambda:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name:  BuildAndDeployLambda
+      Name:  !Sub "BuildAndDeployLambda-${env}"
       Description: "Build and deploy Lambda Function for DRS Plan Automation"
       ServiceRole: !GetAtt CodeBuildBuildAndDeployLambdaExecutionRole.Arn
       Artifacts:
@@ -33,10 +35,11 @@ Resources:
               Fn::ImportValue: "drs-s3-bucket-name"
           - Name: drs_plan_automation_lambda_stack_name
             Value: !Ref StackName
-
+          - Name: env
+            Value: !Ref env
       Source:
         Type: CODEPIPELINE
-        BuildSpec: cfn/codebuild/BuildAndDeployLambda/buildspec-buildanddeploy.yml
+        BuildSpec: !Sub "cfn/codebuild/BuildAndDeployLambda/buildspec-buildanddeploy-${env}.yml"
       TimeoutInMinutes: 10
       Tags:
         - Key: Application

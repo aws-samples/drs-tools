@@ -38,7 +38,7 @@ Parameters:
   Application:
     Description: Application Name
     Type: String
-    Default:  DRS Solution
+    Default:  drs-plan-automation
 
 
 Resources:

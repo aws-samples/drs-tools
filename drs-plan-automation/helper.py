@@ -465,13 +465,13 @@ def update_parameter_file(filename, json_params):
     if param_doc_string:
         param_doc_json = json.loads(param_doc_string)
 
-    logger.info("Loaded JSON from file: {}".format(param_doc_json))
+    logger.debug("Loaded JSON from file: {}".format(param_doc_json))
 
     with open(file_path, 'w') as param_write_doc:
         for key in json_params.keys():
             param_doc_json['Parameters'][key] = json_params[key]
         param_write_doc.write(json.dumps(param_doc_json))
-        logger.info("Wrote file {} with json: {}".format(filename, param_doc_json))
+        logger.debug("Wrote file {} with json: {}".format(filename, param_doc_json))
 
 
 def update_json_file(filename, json_params):
@@ -484,13 +484,13 @@ def update_json_file(filename, json_params):
         if param_doc_string:
             param_doc_json = json.loads(param_doc_string)
 
-    logger.info("Loaded JSON from file: {}".format(param_doc_json))
+    logger.debug("Loaded JSON from file: {}".format(param_doc_json))
 
     with open(filename, 'w') as param_write_doc:
         for key in json_params.keys():
             param_doc_json[key] = json_params[key]
         param_write_doc.write(json.dumps(param_doc_json))
-        logger.info("Wrote file {} with json: {}".format(filename, param_doc_json))
+        logger.debug("Wrote file {} with json: {}".format(filename, param_doc_json))
 
 def read_json_file(filename):
     param_doc_json = {}

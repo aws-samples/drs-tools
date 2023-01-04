@@ -6,5 +6,5 @@ phases:
       - npm install
       - cd ..
       - sam build
-      - sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --s3-bucket ${drs_s3_bucket_name} --s3-prefix "sam-deployments/drs-plan-automation-lambda-api" --capabilities "CAPABILITY_NAMED_IAM" --stack-name "${drs_plan_automation_lambda_api_stack_name}"
+      - sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --s3-bucket ${drs_s3_bucket_name} --s3-prefix "sam-deployments/drs-plan-automation-lambda-api" --capabilities "CAPABILITY_NAMED_IAM" --stack-name "${drs_plan_automation_lambda_api_stack_name}"  --parameter-overrides "env=${env}"
 

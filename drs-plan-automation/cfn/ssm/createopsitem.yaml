@@ -29,14 +29,14 @@ Resources:
             type: Integer
           Title:
             type: String
-            default: 'test ops item from drs solution'
+            default: 'test ops item from drs-plan-automation'
         mainSteps:
           - name: CreateOpsItem
             action: aws:executeAwsApi
             inputs:
               Service: ssm
               Api: CreateOpsItem
-              Source: "drs-solution"
+              Source: "drs-plan-automation"
               Category: "{{Category}}"
               Priority: "{{Priority}}"
               Title: "{{Title}}"
