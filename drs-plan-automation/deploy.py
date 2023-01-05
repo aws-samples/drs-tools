@@ -64,7 +64,7 @@ previous_deploy_params = helper.read_json_file(deploy_config_file_path)
               help="The region where the plan automation solution should be deployed.  This should be the same as the target DRS region")
 @click.option("--prefix", required=False, default=previous_deploy_params.get('prefix', None),
               help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
-@click.option("--environment", required=False, default=previous_deploy_params.get('environment', "dev"),
+@click.option("--environment", required=True, default=previous_deploy_params.get('environment', "dev"),
               help="The initial environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev.  This is also the first environment in the CodePipeline'")
 @click.option('--cleanup', required=False, is_flag=True,
               help="Cleanup the deployed stacks and AWS resources.  If you deployed with the --prefix or --environment option, then you must cleanup with the same option parameters")
@@ -81,17 +81,6 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
             'environment': environment
         }
         helper.update_json_file(deploy_config_file_path, deployment_options)
-    else:
-        if previous_deploy_params:
-            logger.info("Previous deployment parameters found:\n{}\n".format(previous_deploy_params))
-            cleanup_response = input("Do you want to use your previous deployment parameters to cleanup? (type `yes` to proceed): ")
-            if cleanup_response == "yes":
-                allowed_cidrs = previous_deploy_params['allowed_cidrs']
-                user_email = previous_deploy_params['user_email']
-                solution_region = previous_deploy_params['solution_region']
-                prefix = previous_deploy_params['prefix']
-                environment = previous_deploy_params['environment']
-
 
     region = solution_region
 
@@ -159,8 +148,8 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
     planautomation_tables_stack_name = helper.get_name(solution_prefix, "tables", prefix, environment)
 
     s3_bucket_name_export = 'drs-s3-bucket-name'
-    s3_distribution_bucket_name_export = 'drs-distribution-s3-bucket-name'
-    s3_distribution_logging_bucket_name_export = 'drs-distribution-s3-logging-bucket-name'
+    s3_distribution_bucket_name_export = 'drs-distribution-s3-bucket-name-{}'.format(environment)
+    s3_distribution_logging_bucket_name_export = 'drs-distribution-s3-logging-bucket-name-{}'.format(environment)
 
     if cleanup:
         response = input(
@@ -447,4 +436,13 @@ def deploy(allowed_cidrs, user_email, prefix, environment, prompt, cleanup, solu
 
 
 if __name__ == "__main__":
+    if previous_deploy_params:
+        logger.info("Previous deployment parameters found:\n{}\n".format(previous_deploy_params))
+        cleanup_response = input("Do you want to use your previous deployment parameters? (type `yes` to proceed): ")
+        if cleanup_response == "yes":
+            allowed_cidrs = previous_deploy_params['allowed_cidrs']
+            user_email = previous_deploy_params['user_email']
+            solution_region = previous_deploy_params['solution_region']
+            prefix = previous_deploy_params['prefix']
+            environment = previous_deploy_params['environment']
     deploy()

@@ -11,7 +11,7 @@ Resources:
   DRSPlanAutomationApplicationsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName:  drs-plan-automation-applications
+      TableName:  !Sub "drs-plan-automation-applications-${env}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "AppId"
@@ -23,7 +23,7 @@ Resources:
   DRSPlanAutomationAccountsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName:  drs-plan-automation-accounts
+      TableName:  !Sub "drs-plan-automation-accounts-${env}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "AccountId"
@@ -36,7 +36,7 @@ Resources:
   DRSPlanAutomationExecutionTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: drs-plan-automation-executions
+      TableName: !Sub "drs-plan-automation-executions-${env}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "ExecutionId"
@@ -52,7 +52,7 @@ Resources:
   DRSPlanAutomationPlanResultsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: drs-plan-automation-results
+      TableName: !Sub "drs-plan-automation-results-${env}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: "AppId_PlanId"

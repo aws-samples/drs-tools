@@ -124,6 +124,9 @@ def delete_item(table, item_key, assumed_credentials, region):
         )
         logger.info("Deleted sample application item from DynamoDB table: {}".format(table))
     except Exception as e:
+        if 'ResourceNotFoundException' in str(e):
+            logger.warning("Object not found or table doesn't exist, skipping..")
+            return
         logger.error('Failure deleting object with key {} in table {}: {}'.format(item_key, table, e))
         raise
 
@@ -501,7 +504,7 @@ def read_json_file(filename):
             param_doc_json = json.loads(param_doc_string)
             return param_doc_json
     else:
-        return None
+        return param_doc_json
 
 
 def create_document(name, file, tags, assumed_credentials):

@@ -40,7 +40,7 @@ Resources:
       Timeout: 600
       Environment:
         Variables:
-          DRS_ASSUME_ROLE_NAME: !Ref DrsAssumeRoleName
+          DRS_ASSUME_ROLE_NAME: !Sub "${DrsAssumeRoleName}-${env}"
           DRS_APPLICATION_TABLE_NAME:
             Fn::ImportValue: !Sub "drs-plan-automation-applications-table-name-${env}"
           DRS_RESULTS_TABLE_NAME:
