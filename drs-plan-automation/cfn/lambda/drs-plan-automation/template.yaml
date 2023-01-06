@@ -19,24 +19,17 @@ Parameters:
     Default: 128
   env:
     Type: String
-    Default:  NONE
   DrsAssumeRoleName:
     Description: The name of the AWS IAM role in DRS accounts allowing the solution to perform AWS operations in the account (e.g. DRS recovery, SSM Automation initiation)
     Type: String
-    Default: "drs_plan_automation_account_role"
-
-Conditions:
-  ShouldNotCreateEnvResources:
-    Fn::Equals:
-      - Ref: env
-      - NONE
+    Default: "drs-plan-automation-account-role"
 
 
 Resources:
   DRSPlanAutomationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      FunctionName: "drs-plan-automation"
+      FunctionName: !Sub "drs-plan-automation-${env}"
       CodeUri: src/
       Handler: drs_automation_plan.handler
       Runtime: python3.9
@@ -47,13 +40,13 @@ Resources:
       Timeout: 600
       Environment:
         Variables:
-          DRS_ASSUME_ROLE_NAME: !Ref DrsAssumeRoleName
+          DRS_ASSUME_ROLE_NAME: !Sub "${DrsAssumeRoleName}-${env}"
           DRS_APPLICATION_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-applications-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-applications-table-name-${env}"
           DRS_RESULTS_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-plan-results-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-name-${env}"
           DRS_EXECUTION_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-plan-execution-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-plan-execution-table-name-${env}"
 
   DRSPlanAutomationStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -243,15 +236,7 @@ Resources:
   DRSPlanAutomationFunctionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName:
-        Fn::If:
-          - ShouldNotCreateEnvResources
-          - drs-plan-automation_lambda
-          - Fn::Join:
-              - ''
-              - - drs-plan-automation_lambda
-                - "-"
-                - Ref: env
+      RoleName: !Sub "drs-plan-automation-lambda-${env}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -265,7 +250,7 @@ Resources:
   LambdaExecutionPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: lambda-execution-policy
+      PolicyName: !Sub "drs-plan-automation-lambda-policy-${env}"
       Roles:
         - Ref: DRSPlanAutomationFunctionRole
       PolicyDocument:
@@ -275,7 +260,7 @@ Resources:
               - sts:AssumeRole
             Effect: Allow
             Resource:
-              - !Sub "arn:aws:iam::*:role/${DrsAssumeRoleName}"
+              - !Sub "arn:aws:iam::*:role/${DrsAssumeRoleName}-${env}"
           - Sid: LogOutput
             Effect: Allow
             Action:
@@ -295,16 +280,17 @@ Resources:
             Action:
               - dynamodb:PutItem
             Resource:
-              - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+              - Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-arn-${env}"
               - Fn::Join:
                   - "/"
-                  - - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+                  - - Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-arn-${env}"
                     - index/*
 
 
   DRSPlanAutomationStateMachineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "drs-plan-automation-statemachine-${env}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -316,7 +302,7 @@ Resources:
               - sts:AssumeRole
       Path: "/"
       Policies:
-        - PolicyName:  InvokeDRSPlanAutomationFunction
+        - PolicyName:  !Sub "drs-plan-automation-statemachine-policy-${env}"
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -332,4 +318,4 @@ Outputs:
     Value: !Ref DRSPlanAutomationStateMachine
     Description: "DRS Plan Automation State Machine Arn"
     Export:
-      Name: "drs-plan-automation-state-machine-arn"
+      Name: !Sub "drs-plan-automation-state-machine-arn-${env}"

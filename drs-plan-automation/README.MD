@@ -3,23 +3,69 @@
 ## Overview
 This solution provides an automated, sequential approach for AWS DRS drills and recoveries.  The solution enables you to plan multiple application recoveries, each with their own recovery order and wait times.  The solution provides a protected, React based user interface to accelerate and simplify use.
 
-The solution enables you to organize collections of servers by tags in ordered waves, so you can recovery architectural components as groups.  Each wave can also have a sequenced set of PreWave and PostWave automation actions.  Automation actions are defined as SSM Automation runbooks providing broad flexibility for sequenced recovery.  This enables you to support and orchestrate managed services recovery and automation for AWS services such as RDS, Lambda, Route 53, S3, etc either before or after a grouped EC2 recovery completed by DRS.  
+The solution enables you to organize collections of servers by tags in ordered waves, so you can recovery architectural components as groups.  Each wave can also have a sequenced set of PreWave and PostWave automation actions.  Automation actions are defined as SSM Automation runbooks providing broad flexibility for sequenced recovery.  This enables you to support and orchestrate managed services recovery and automation for AWS services such as RDS, Lambda, Route 53, S3, etc either before or after a grouped EC2 recovery completed by DRS.
 
 ### Features
 
-* Organize and define automated disaster recovery plans for your applications using DRS in multiple AWS accounts and sequence the recovery of your servers and automation 
+* Organize and define automated disaster recovery plans for your applications using DRS in multiple AWS accounts and sequence the recovery of your servers and automation
 * Specify and execute sequenced automation before and after server recovery as SSM Automation runbooks
 * Define, copy, and test multiple recovery plans
 * Define and copy multiple sequenced plan automation waves within a plan
 * Record and reference drill / recovery results for automation and server recovery plans
 * Enhance and implement your own features using CodePipeline / CodeCommit
 
-## Application Architecture
-The solution provides a React based UI requiring authorized login provided by Amazon Cognito.  The solution also uses AWS WAF to limit access to the defined IP addresses / CIDRs that you specify.  The solution uses API Gateway and AWS Lambda to interface with Step Functions for orchestration and DynamoDB for data capture / retrieval.
+## Architecture
+
+### AWS Services
+The following AWS services are integrated and used by the solution:
+ 
+* AWS Elastic Disaster Recovery Service (DRS):  Initiate DRS drills / recoveries
+* AWS Systems Manager (SSM):  Automate actions before and after DRS drills / recoveries.
+* AWS Identity and Access Management (IAM):  Authorize solution to perform automation and recoveries within deployed account and across AWS accounts with DRS.
+* AWS Key Management Service (KMS):  Encrypt AWS and solution resources.
+* Amazon Cognito:  Provide authentication to access and utilize solution and APIs
+* AWS WAF:  Optionally limit access to only specific CIDRs.
+* Amazon CloudFront:  Serve React front end interface.
+* Amazon API Gateway:  Integrate with frontend APIs implemented in AWS Lambda 
+* AWS Lambda:  Provide APIs for CRUD operations to DynamoDB and implement orchestration logic
+* AWS Step Functions:  Orchestrate user defined recovery plans
+* Amazon DynamoDB:  Store data entities (accounts, applications, plans, waves, PreWave / PostWave actions)
+* AWS CodeCommit:  Version and store solution code, integrate with CI/CD pipeline.
+* AWS CodePipeline:  Orchestrate CI / CD process
+* AWS CodeBuild:  Validate templates, build and deploy AWS Lambda functions using SAM.
+* AWS CloudFormation:  CloudFormation is used to deploy all AWS resources as infrastructure as code.
+* Amazon Simple Storage Service (S3):  Store solution and CI/CD resources.
+* Amazon Simple Notification Service (SNS):  Provide notification for plan automation progression and failed pipelines.
 
 ![](diagrams/DRSPlanAutomationBaselineArchitecture.png)
 
+## Application Architecture
+
+The solution provides a React based UI requiring authorized login provided by Amazon Cognito.  The solution also uses AWS WAF to limit access to the defined IP addresses / CIDRs that you specify.  The solution uses API Gateway and AWS Lambda to interface with Step Functions for orchestration and DynamoDB for data capture / retrieval.
+
+### Front End Interface
+The front end application code is written in JavaScript using React.  The following primary JavaScript libraries and approaches are used: 
+
+* React
+* Material UI
+* AWS Amplify
+* React Hook Form
+
+### Middleware
+The middleware is composed of two AWS Lambda functions.  
+
+#### drs-plan-automation-api
+The **drs-plan-automation-api** AWS Lambda function provides a REST API for the front end interface to perform CRUD operations for the application data to DynamoDB.  The function also initiates the execution of the AWS Step Function to initiate DRS Plan drills / recoveries.
+
+This function is written in JavaScript for Node.js.  The function uses the AWS Serverless Express library to provide REST operations.
+
+#### drs-plan-automation
+The **drs-plan-automation** AWS Lambda function provides control logic for the AWS step function orchestration of plans, coordinating sequenced SSM automation and DRS drill / recovery. 
+
+The function is written in Python 3.9 and executes and tracks DRS jobs and SSM automation for plans orchestrated by the AWS Step Function state machine.
+
 ## State Machine and control logic
+
 The solution uses AWS Step Functions to orchestrate recovery based on your plans defined sequence set of Waves and PreWave / PostWave actions. AWS Lambda is used to drive recovery / automation execution logic.
 
 The following state machine is implemented to coordinate the execution of PreWave Actions, DRS Jobs, and PostWave Actions for DR plan automation.  The state machine is supported by an AWS Lambda function that implements the control logic for the plan automation.  The state machine and lambda function are deployed via CodePipeline using the [drs-automation-plan.yaml](drs-automation-plan/cfn/lambda/drs-automation-plan/drs-automation-plan.yaml) CloudFormation template.
@@ -32,15 +78,18 @@ The primary entities in the solution are:  Applications, Plans, Waves, PreWave A
 
 ![](diagrams/EntityRelationDiagram.png)
 
-The primary entities for results are similar. 
+The primary entities for results are similar.
 
 Data is stored in JSON format in DynamoDB.  There are three DynamoDB tables used by the solution:
 
-* **drs-plan-automation-accounts**:  This table is used to store the AWS accounts and DRS regions that applications can be configured to use.
-* **drs-plan-automation-applications**:  This is the primary table used the the solution and defines your Applications and their related Plans, Waves, and PreWave / PostWave Actions.
-* **drs-plan-automation-results**:  This table is used to store drill / recovery execution results.
+* **drs-plan-automation-accounts-_dev_**:  This table is used to store the AWS accounts and DRS regions that applications can be configured to use.
+* **drs-plan-automation-applications-_dev_**:  This is the primary table used the the solution and defines your Applications and their related Plans, Waves, and PreWave / PostWave Actions.
+* **drs-plan-automation-results-_dev_**:  This table is used to store drill / recovery execution results.
+
+**NOTE**:  The tables and other AWS resources are suffixed with the environment name, the default environment name for deployment is _dev_.
 
 ### drs-plan-automation-accounts
+
 This table is used to store the AWS accounts and DRS regions that applications can be configured to use.
 
 #### Sample Item
@@ -60,6 +109,7 @@ This table is used to store the AWS accounts and DRS regions that applications c
 ### drs-plan-automation-applications
 
 #### Sample Item
+
 ```json
 {
   "AppId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
@@ -145,6 +195,7 @@ This table is used to store the AWS accounts and DRS regions that applications c
   ]
 }
 ```
+
 * **AppId** _(string)_ --
   A system generated uuid that uniquely identifies each application.  The AppId is the key for the table and is a uuidv4 hash generated by the REST API whenever a new application is created.
 * **AppName** _(string)_ --
@@ -227,9 +278,11 @@ This table is used to store the AWS accounts and DRS regions that applications c
               The SSM Automation Runbook parameters as defined in the [boto3 start_automation_execution function](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ssm.html#SSM.Client.start_automation_execution).
 
 ### drs-plan-automation-results
+
 This table stores the results from a plan automation execution.
 
 #### Sample Item
+
 ```json
 {
   "AppId_PlanId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d_9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6a",
@@ -415,23 +468,33 @@ This table stores the results from a plan automation execution.
     * **status** _(string)_ --
       The status for the Wave.  Possible values are `completed`, `failed`, `timeout`
 
-
 ## CI / CD Architecture
-The solution deploys a complete CI/CD management solution using CodeCommit, CodePipeline, CodeBuild, and CloudFormation.  You can use this pipeline to iteratively make controlled changes and enhance your plan automation solution as needed.
+
+The solution deploys a complete CI/CD management solution using CodeCommit, CodePipeline, CodeBuild, and CloudFormation.  
+The solution commits the codebase and deployment options you have chosen and initiates CodePipeline to perform the remainder of the solution deployment.
+You can use this pipeline to iteratively make controlled changes and enhance your plan automation solution as needed.
+The pipeline creates a "Development" stage with all resources suffixed and configured to support multiple environments, as needed.
+You can add additional environment stages and configure the CodePipeline actions to deploy the green colored stacks for additional environment support.
 
 ![](diagrams/DRSPlanAutomationPipeline.png)
 
+The stacks color coded in blue in the diagram are deployed once when you deploy the solution.  The stacks color coded in green are created / updated by CodePipeline on initial deployment and commit from CodeCommit.
+
+![](diagrams/DRSPlanAutomationCodePipeline.png)
 
 ## Deployment
+
 Deployment is performed by CloudFormation stack deployment and script automation.  A script is provided to automate the deployment steps.
 
 ### Prerequisites
+
 * [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html):  The SAM CLI is used to build and deploy the lambda functions used in the solution.  These lambda functions are deployed via CodePipeline.  You should install the SAM CLI to enable you to locally test and invoke the deployed lambda functions.  Install the SAM CLI following the instructions in the documentation.
 * Python 3:  The deployment script is written in Python and automates the deployment of cloudformation stacks and AWS resource lookups.  With Python3 installed, install the required Python packages in [requirements.txt](./requirements.txt) with the command:
 * Elastic Disaster Recovery Service (DRS) initialized in target region:  Before you can start using the DRS service, you must initialize the service by configuring the default settings in your target DR region. [Follow the instructions in the documentation](https://docs.aws.amazon.com/drs/latest/userguide/getting-started-initializing.html).
 * Set the environment variables: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` to the AWS account credentials that you want to use to deploy the solution.  You will need sufficient credentials to deploy all the AWS resources used in the solution.
 
 The deployment scripts provided rely on packages defined in [requirements.txt](./requirements.txt).  You can install them with the following command:
+
 ```shell
 python3 -m pip install -r requirements.txt --user
 ```
@@ -443,26 +506,28 @@ A python [deploy.py](./deploy.py) script is provided to automate the deployment 
 This script deploys all the blue colored stacks in the [CI / CD Architecture diagram](#ci--cd-architecture).  The script concludes by deploying a CodePipeline that deploys the remaining stacks for the solution and defines the basis for future updates.
 
 #### Usage
+
 Run your python interpreter against the `deploy.py` script with the required options.
 
 ```shell
 python3 deploy.py [OPTIONS]
 ```
+
 * Options:
 * **`--user-email`** - **REQUIRED**: The email address for the cognito user for the solution.  A new temporary password will be sent to this user to login to the solution.
 * **`--solution-region`** - **REQUIRED**: The region where the plan automation solution should be deployed.  This should be the same as the target DRS region.
+* **`--environment`** - **REQUIRED (default: dev)**: The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'.  The default environment name is **dev**.
 * **`--allowed-cidrs`** - The allowed IP address CIDRs that can access the cloudfront hosted front end interface.  Specifying this option results in a WAF Web ACL being created and attached to the CloudFront Distribution.  If this option isn't specified, then anyone with the URL for the CloudFront distribution will have network access to the user interface.  Login is still required even if you have network access.
 * **`--prefix`**: The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'
-* **`--environment`**: The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'
 * **`--cleanup`**: Cleanup the deployed stacks and AWS resources.  You must cleanup with the same parameter options that you specified for deployment.
 * **`--prompt`**: Whether to prompt and require you to press enter after each stack is deployed.
 * **`--help`**: Show this message and exit.
 
 ## Sample Application and Sample Environment
+
 The solution includes a sample application and environment, so you can quickly explore and test out the solution.
 
 ![](diagrams/sample_application.png)
-
 
 The sample application and environment deploys the following resources:
 
@@ -481,9 +546,10 @@ The sample application and environment deploys the following resources:
       * Purpose: `drs-plan-automation-demo-source`
   * 3 Fleets of EC2 instances with 1 instances each:  `sample-dbserver-instance` | `sample-webserver-instance` | `sample-appserver-instance`
 
-**NOTE**:  EC2 instance tags are not replicated to the corresponding DRS source servers in the DRS service.  These tags are required on the source servers so that the plan automation solution can select the right source servers for plan execution.  You can automate the replication of EC2 instance tags to corresponding DRS source servers using the [drs-synch-ec2-tags-and-instance-type solution](https://github.com/aws-samples/drs-tools/tree/main/drs-synch-ec2-tags-and-instance-type)
+**_NOTE_**:  EC2 instance tags are not replicated to the corresponding DRS source servers in the DRS service.  These tags are required on the source servers so that the plan automation solution can select the right source servers for plan execution.  You can automate the replication of EC2 instance tags to corresponding DRS source servers using the [drs-synch-ec2-tags-and-instance-type solution](https://github.com/aws-samples/drs-tools/tree/main/drs-synch-ec2-tags-and-instance-type)
 
 * [One Application DynamoDB Item Record](./samples/sample_data/sample_application.json):  This application record aligns to the sample EC2 environment,  all three EC2 instances align to the `Application: sample` tag used to identify the application.  Additionally, each EC2 instance is tagged with a `Role` tag aligning it to each wave.
+
   * Application: sample - All three EC2 instances in the sample environment are tagged with `Application: Sample`
   * 1 Plan:
     * 3 Waves
@@ -496,7 +562,6 @@ The sample application and environment deploys the following resources:
       * Role: WebServer - One EC2 instance is tagged with `Role: WebServer`
         * 1 PreWave Action:  Create SSM OpsItem
         * 1 PostWave Action:  Create SSM OpsItem
-
 * [One Application Result Item record](./samples/sample_data/sample_result.json):  This result record demonstrates the Plan Results view without requiring you to initiate a drill / recovery.  NOTE:  The links in the result will not work since they are not linked to your deployment.  You can execute a new drill / recovery to product an actual result with working links.
 
 ### Sample Application Deployment Script
@@ -510,14 +575,14 @@ python3 deploy_sample.py [OPTIONS]
 ```
 
 Options:
+
 * **```--source-region```**:  **REQUIRED** - Specify the AWS region where the sample AWS EC2 environment should be deployed.  This will be a region different from your DRS / DR region. (e.g. us-east-1)
 * **```--solution-region```**:  **REQUIRED** - Specify the AWS region where the solution has been deployed.  This should be the same AWS region where DRS is configured. (e.g. us-west-2)
+* **```--environment```**: **REQUIRED (default: dev)** - The environment name to append to the end of each stack name and AWS resource, eg environment ```dev``` results in stack name ```drs-plan-automation-dev```
 * **```--help```**:  Display and describe valid parameter options
 * **```--prefix <prefix name>```**:  The prefix to preprend in front of each stack name, eg prefix ```myco``` results in stack name ```myco-drs-plan-automation-s3```.
-* **```--environment <environment name>```**:  The environment name to append to the end of each stack name, eg environment ```dev``` results in stack name ```drs-plan-automation-dev-s3eiifccugtdlhleijhckbijbeikffrhcdnjejfdegfhhd
 * **```--cleanup```**:  Cleanup the deployed stacks and AWS resources.  You must cleanup with the same parameter options that you specified for deployment.
 * **```--prompt```**:  Whether to prompt and require you to press enter after each stack is deployed.
-
 
 ## Usage
 
@@ -525,14 +590,13 @@ Once the solution is deployed, CodePipeline will execute and deploy the remainin
 
 Wait until the pipeline successfully completes execution.  Once the pipeline has completed execution, proceed to Amazon CloudFront in the AWS Management Console.
 
-Copy the CloudFront distribution URL and open it within a browser.  
+Copy the CloudFront distribution URL and open it within a browser.
 
-**NOTE**:  If you used the `--allowed-cidrs` option when you deployed the solution, then you will only be able to access the user interface if your ip address is within the range specified. 
+**NOTE**:  If you used the `--allowed-cidrs` option when you deployed the solution, then you will only be able to access the user interface if your ip address is within the range specified.
 
 Check the email address that you specified with the `--user-email` option.  You should have received an email with subject **Your temporary password** from Amazon Cognito.  You will need to login with this password.  Cognito user registration is disabled by default.  Once you login you will be required to change the password.
 
 If you deployed the sample application with the [deploy_sample.py](./deploy_sample.py) script, then you will have a sample application already created in the solution.  If not, you can proceed to create an application, plan, and associated waves.
-
 
 ## Develop and test locally
 
@@ -540,25 +604,25 @@ You can enhance and develop the front end interface and lambda functions used in
 
 You should clone the CodeCommit repository that was created for you with the deployed solution.  The CodeCommit repository is linked to CodePipeline to initiate a deployment on commit to the `main` branch.
 
-You should develop and test locally against your cloned CodeCommit repository in a feature branch.  When you are ready to integrate your changes you should commit, push, and merge the branch into the main branch to initiate a deployment.  
+You should develop and test locally against your cloned CodeCommit repository in a feature branch.  When you are ready to integrate your changes you should commit, push, and merge the branch into the main branch to initiate a deployment.
+
+The [Serverless Application Model (SAM)](https://aws.amazon.com/serverless/sam/) is configured for each lambda function used by the solution under the [cfn/lambda](./cfn/lambda) directory.  This allows you to develop and test your lambda functions locally before pushing changes to the pipeline.
 
 ### Frontend React Interface Local Development
 
 Follow these steps to configure, deploy, develop, and test the solution locally.
 
-1.  Update the [aws-exports.js](./fe/src/aws-exports.js) file with your deployed Amazon Cognito User Pool configuration.
-    You must update the config file with your deployed cognito user pool so that your locally deployed interface can authenticate you.
-2.  Install the application package dependencies
-    Install the application dependencies by:
-    a. Change to the src directory:  `cd fe/src`
-    b. Install the dependencies: `npm install`
-3.  Start the local webserver.  You can serve the frontend interface locally with:  `npm start`
-4.  Make changes to the front end code.  As you make changes to the front end code, the local server will hotload the changes so you can iterate and update the solution.
-
-
+1. Update the [aws-exports.js](./fe/src/aws-exports.js) file with your deployed Amazon Cognito User Pool configuration.
+   You must update the config file with your deployed cognito user pool so that your locally deployed interface can authenticate you.
+2. Install the application package dependencies
+   Install the application dependencies by:
+   a. Change to the src directory:  `cd fe/src`
+   b. Install the dependencies: `npm install`
+3. Start the local webserver.  You can serve the frontend interface locally with:  `npm start`
+4. Make changes to the front end code.  As you make changes to the front end code, the local server will hotload the changes so you can iterate and update the solution.
 
 ## Troubleshooting
 
 * ### I am getting a 403 error when trying to access the CloudFront distribution
-  Make sure your ip address is within the IP address range for the CIDR block you specified when you deployed the solution with the `--allowed-cidrs` option.
 
+  Make sure your ip address is within the IP address range for the CIDR block you specified when you deployed the solution with the `--allowed-cidrs` option.

@@ -57,14 +57,14 @@ deploy_config_file_path = os.path.join("./", 'deploy_sample.json')
 previous_deploy_params = helper.read_json_file(deploy_config_file_path)
 
 @click.command()
-@click.option("--source-region", required=(False if previous_deploy_params else True), default=None,
+@click.option("--source-region", required=True, default=previous_deploy_params.get('source_region', None),
               help="The region where the sample EC2 environment should be deployed, this should be different from the DRS target DR region")
-@click.option("--solution-region", required=(False if previous_deploy_params else True), default=None,
+@click.option("--solution-region", required=True, default=previous_deploy_params.get('solution_region', None),
               help="The region where the plan automation solution is deployed.  This should be the same as the target DRS region")
 @click.option("--prefix", required=False, default=None,
-              help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'")
-@click.option("--environment", required=False, default=None,
-              help="The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'")
+              help="The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-plan-automation-sample-drs-environment'")
+@click.option("--environment", required=False, default=previous_deploy_params.get('environment', "dev"),
+              help="The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-plan-automation-sample-drs-environment-dev'")
 @click.option('--cleanup', required=False, is_flag=True,
               help="Cleanup the deployed stacks and AWS resources.  If you deployed with the --prefix or --environment option, then you must cleanup with the same option parameters")
 @click.option('--prompt', required=False, is_flag=True,
@@ -156,11 +156,11 @@ def deploy(source_region, solution_region, prefix, environment, prompt, cleanup)
     file_path = os.path.join("./", 'samples/sample_data/sample_application.json')
     helper.update_json_file(file_path, account_record)
 
-    helper.put_item_file('drs-plan-automation-applications', 'samples/sample_data/sample_application.json', creds, solution_region)
+    helper.put_item_file('drs-plan-automation-applications-{}'.format(environment), 'samples/sample_data/sample_application.json', creds, solution_region)
     logger.info("Inserting sample result object into DynamoDB table")
-    helper.put_item_file('drs-plan-automation-results', 'samples/sample_data/sample_result.json', creds, solution_region)
+    helper.put_item_file('drs-plan-automation-results-{}'.format(environment), 'samples/sample_data/sample_result.json', creds, solution_region)
     logger.info("Inserting solution account object into DynamoDB table")
-    helper.ddb_put_item(creds,account_record,solution_region, 'drs-plan-automation-accounts')
+    helper.ddb_put_item(creds,account_record,solution_region, 'drs-plan-automation-accounts-{}'.format(environment))
 
 
     logger.info(

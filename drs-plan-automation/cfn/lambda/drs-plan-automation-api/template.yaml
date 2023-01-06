@@ -20,11 +20,6 @@ Parameters:
   env:
     Type: String
     Default:  NONE
-Conditions:
-  ShouldNotCreateEnvResources:
-    Fn::Equals:
-      - Ref: env
-      - NONE
 
 
 Resources:
@@ -39,29 +34,21 @@ Resources:
       Timeout: 25
       Architectures:
         - x86_64
-      FunctionName:
-        Fn::If:
-          - ShouldNotCreateEnvResources
-          - drs-plan-automation-api
-          - Fn::Join:
-              - ''
-              - - drs-plan-automation-api
-                - "-"
-                - Ref: env
+      FunctionName: !Sub "drs-plan-automation-api-${env}"
       Environment:
         Variables:
           ENV:
             Ref: env
           DRS_STATE_MACHINE_ARN:
-            Fn::ImportValue: "drs-plan-automation-state-machine-arn"
+            Fn::ImportValue: !Sub "drs-plan-automation-state-machine-arn-${env}"
           DRS_ACCOUNTS_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-accounts-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-accounts-table-name-${env}"
           DRS_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-applications-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-applications-table-name-${env}"
           DRS_EXECUTION_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-plan-execution-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-plan-execution-table-name-${env}"
           DRS_RESULTS_TABLE_NAME:
-            Fn::ImportValue: "drs-plan-automation-plan-results-table-name"
+            Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-name-${env}"
       Role:
         Fn::GetAtt:
           - LambdaExecutionRole
@@ -70,15 +57,7 @@ Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName:
-        Fn::If:
-          - ShouldNotCreateEnvResources
-          - drs-plan-automation-api_lambda
-          - Fn::Join:
-              - ''
-              - - drs-plan-automation-api_lambda
-                - "-"
-                - Ref: env
+      RoleName: !Sub "drs-plan-automation-api-lambda-${env}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -91,7 +70,7 @@ Resources:
   lambdaexecutionpolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: lambda-execution-policy
+      PolicyName: !Sub "drs-plan-automation-api-lambda-policy-${env}"
       Roles:
         - Ref: LambdaExecutionRole
       PolicyDocument:
@@ -114,7 +93,7 @@ Resources:
           - Action:
               - states:StartExecution
             Resource:
-              - Fn::ImportValue: "drs-plan-automation-state-machine-arn"
+              - Fn::ImportValue: !Sub "drs-plan-automation-state-machine-arn-${env}"
             Effect: Allow
           - Effect: Allow
             Action:
@@ -126,52 +105,37 @@ Resources:
               - dynamodb:UpdateItem
               - dynamodb:DeleteItem
             Resource:
-              - Fn::ImportValue: "drs-plan-automation-accounts-table-arn"
+              - Fn::ImportValue: !Sub "drs-plan-automation-accounts-table-arn-${env}"
               - Fn::Join:
                   - "/"
-                  - - Fn::ImportValue: "drs-plan-automation-accounts-table-arn"
+                  - - Fn::ImportValue: !Sub "drs-plan-automation-accounts-table-arn-${env}"
                     - index/*
-              - Fn::ImportValue: "drs-plan-automation-applications-table-arn"
+              - Fn::ImportValue: !Sub "drs-plan-automation-applications-table-arn-${env}"
               - Fn::Join:
                   - "/"
-                  - - Fn::ImportValue: "drs-plan-automation-applications-table-arn"
+                  - - Fn::ImportValue: !Sub "drs-plan-automation-applications-table-arn-${env}"
                     - index/*
-              - Fn::ImportValue: "drs-plan-automation-plan-execution-table-arn"
+              - Fn::ImportValue: !Sub "drs-plan-automation-plan-execution-table-arn-${env}"
               - Fn::Join:
                   - "/"
-                  - - Fn::ImportValue: "drs-plan-automation-plan-execution-table-arn"
+                  - - Fn::ImportValue: !Sub "drs-plan-automation-plan-execution-table-arn-${env}"
                     - index/*
-              - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+              - Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-arn-${env}"
               - Fn::Join:
                   - "/"
-                  - - Fn::ImportValue: "drs-plan-automation-plan-results-table-arn"
+                  - - Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-arn-${env}"
                     - index/*
 
 
 Outputs:
   LambdaFunctionName:
     Value: !Ref LambdaFunction
-    Description: "DRS Solution - API Lambda Function Name"
+    Description: "drs-plan-automation - API Lambda Function Name"
     Export:
-      Name: "drs-plan-automation-lambda-api-name"
+      Name: !Sub "drs-plan-automation-lambda-api-name-${env}"
 
   LambdaFunctionArn:
     Value: !GetAtt LambdaFunction.Arn
-    Description: "DRS Solution - API Lambda Function Arn"
+    Description: "drs-plan-automation - API Lambda Function Arn"
     Export:
-      Name: "drs-plan-automation-lambda-api-arn"
-
-  Name:
-    Value:
-      Ref: LambdaFunction
-  Arn:
-    Value:
-      Fn::GetAtt:
-        - LambdaFunction
-        - Arn
-  Region:
-    Value:
-      Ref: AWS::Region
-  LambdaExecutionRole:
-    Value:
-      Ref: LambdaExecutionRole
+      Name: !Sub "drs-plan-automation-lambda-api-arn-${env}"

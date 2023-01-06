@@ -1,6 +1,6 @@
 {
   "Parameters" : {
-    "env" : "NONE"
+    "env" : ""
   },
   "Tags" : {
     "BusinessUnit" : "Engineering",

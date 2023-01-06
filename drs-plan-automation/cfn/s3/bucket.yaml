@@ -12,7 +12,8 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: aws:kms
-              KMSMasterKeyID: "alias/drs-plan-automation"
+              KMSMasterKeyID: 
+                Fn::ImportValue: "drs-kms-id"
       VersioningConfiguration:
         Status: Enabled
 

@@ -6,12 +6,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   env:
     Type: String
-    Default: NONE
-Conditions:
-  ShouldNotCreateEnvResources:
-    Fn::Equals:
-      - Ref: env
-      - NONE
 
 Resources:
   functiondrsplanguiPermissiondrsplangui:
@@ -19,7 +13,7 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName:
-        Fn::ImportValue: "drs-plan-automation-lambda-api-name"
+        Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-name-${env}"
       Principal: apigateway.amazonaws.com
       SourceArn:
         Fn::Join:
@@ -46,13 +40,10 @@ Resources:
               - Ref: AWS::Region
               - ".amazonaws.com"
         basePath:
-          Fn::If:
-            - ShouldNotCreateEnvResources
-            - "/prod"
-            - Fn::Join:
-                - ''
-                - - "/"
-                  - Ref: env
+          Fn::Join:
+            - ''
+            - - "/"
+              - Ref: env
         schemes:
           - https
         paths:
@@ -110,7 +101,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -171,7 +162,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -232,7 +223,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -293,7 +284,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -354,7 +345,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -415,7 +406,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -476,7 +467,7 @@ Resources:
                     - - 'arn:aws:apigateway:'
                       - Ref: AWS::Region
                       - ":lambda:path/2015-03-31/functions/"
-                      - Fn::ImportValue: "drs-plan-automation-lambda-api-arn"
+                      - Fn::ImportValue: !Sub "drs-plan-automation-lambda-api-arn-${env}"
                       - "/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
@@ -539,19 +530,15 @@ Resources:
       RestApiId:
         Ref: drsplangui
       Description: The Development stage deployment of your API.
-      StageName:
-        Fn::If:
-          - ShouldNotCreateEnvResources
-          - prod
-          - Ref: env
+      StageName: !Ref env
 
 
 Outputs:
-  DRSPlanAutomationAPIIde:
+  DRSPlanAutomationApiId:
     Value: !Ref drsplangui
     Description: "DRS Plan Automation API ID"
     Export:
-      Name: "drs-plan-automation-api-id"
+      Name: !Sub "drs-plan-automation-api-id-${env}"
 
   drsplangui:
     Description: Root URL of the API gateway
@@ -563,15 +550,12 @@ Outputs:
           - ".execute-api."
           - Ref: AWS::Region
           - ".amazonaws.com/"
-          - Fn::If:
-              - ShouldNotCreateEnvResources
-              - prod
-              - Ref: env
+          - !Ref env
     Export:
-      Name: "drs-plan-automation-api-url"
+      Name: !Sub "drs-plan-automation-api-url-${env}"
 
   DRSPlanAutomationAPIName:
     Description: API Friendly name
     Value: drsplangui
     Export:
-      Name: "drs-plan-automation-api-name"
+      Name: !Sub "drs-plan-automation-api-name-${env}"
