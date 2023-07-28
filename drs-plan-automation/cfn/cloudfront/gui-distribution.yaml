@@ -61,6 +61,9 @@ Resources:
         IgnorePublicAcls : true
         RestrictPublicBuckets : true
       AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
