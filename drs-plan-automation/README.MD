@@ -516,9 +516,9 @@ python3 deploy.py [OPTIONS]
 * Options:
 * **`--user-email`** - **REQUIRED**: The email address for the cognito user for the solution.  A new temporary password will be sent to this user to login to the solution.
 * **`--solution-region`** - **REQUIRED**: The region where the plan automation solution should be deployed.  This should be the same as the target DRS region.
-* **`--environment`** - **REQUIRED (default: dev)**: The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-configuration-synchronizer-dev'.  The default environment name is **dev**.
+* **`--environment`** - **REQUIRED (default: dev)**: The environment name to append to the end of each stack name, eg environment 'dev' results in stack name 'drs-plan-automation-dev'.  The default environment name is **dev**.
 * **`--allowed-cidrs`** - The allowed IP address CIDRs that can access the cloudfront hosted front end interface.  Specifying this option results in a WAF Web ACL being created and attached to the CloudFront Distribution.  If this option isn't specified, then anyone with the URL for the CloudFront distribution will have network access to the user interface.  Login is still required even if you have network access.
-* **`--prefix`**: The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-configuration-synchronizer-lambda'
+* **`--prefix`**: The prefix to preprend in front of each stack name, eg prefix 'myco' results in stack name 'myco-drs-plan-automation-lambda'
 * **`--cleanup`**: Cleanup the deployed stacks and AWS resources.  You must cleanup with the same parameter options that you specified for deployment.
 * **`--prompt`**: Whether to prompt and require you to press enter after each stack is deployed.
 * **`--help`**: Show this message and exit.
