@@ -165,7 +165,7 @@ def deploy(source_region, solution_region, prefix, environment, prompt, cleanup)
 
     logger.info(
         "Sample Deployment Completed.\n"
-        "The source environment EC2 instances will take approximately 20 minutes to complete their initial synch to DRS before they are ready to be used in a drill / recovery.\n"        
+        "The source environment EC2 instances will take approximately 20 minutes to complete their initial synch to DRS before they are ready to be used in a drill / recovery.  You may need to stop / restart the instances in order to initiate the initial synch.\n"        
         "NOTE:  The links in the plan results will not work since the result wasn't actually produced in your environment.  Run a  drill / failover in your environment to produce a real, actual result.\n")
 if __name__ == "__main__":
     deploy()
