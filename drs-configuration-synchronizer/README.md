@@ -185,8 +185,8 @@ The VPC subnet in which a drill or recovery server is launched is determined by 
 
 A subnet is considered available based on the following criteria:
 - The subnet belongs to a VPC owned by a DRS target AWS account defined in source control
-- The VPC of the subnet is tagged with tag key of **drs-target** and a tag value of **true**
-- The subnet is tagged with tag key of **drs-target** and a tag value of **true**
+- The VPC of the subnet is tagged with tag key of **drstarget** and a tag value of **true**
+- The subnet is tagged with tag key of **drstarget** and a tag value of **true**
 - The private IP address of the source server falls within CIDR block of the subnet
 - The private IP address of the source server is not an Amazon reserved IP address.
 
