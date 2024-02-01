@@ -185,7 +185,7 @@ def deploy(prefix, environment, prompt, cleanup, account_role_only, solution_acc
                 "build",
                 "--template-file",
                 lambda_stack_template,
-                "--use-container"
+                #"--use-container"
             ]
         )
 
