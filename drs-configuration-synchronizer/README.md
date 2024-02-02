@@ -303,7 +303,7 @@ You can execute a dry run of the solution by setting Name to `*` and ExcludeAll 
 |---------|------------|-----------------------------|
 | *       | true       |                             |
 
-You can exclude automatic network configuration for all servers by setting `ExcludeAll` to `false`, and `ExcludeNetworkConfiguration` to `true`.
+You can exclude automatic network configuration for all servers by setting Name to `*` and by setting `ExcludeAll` to `false`, and `ExcludeNetworkConfiguration` to `true`.
 | Name    | ExcludeAll | ExcludeNetworkConfiguration |
 |---------|------------|-----------------------------|
 | *       | false      | true                        |
