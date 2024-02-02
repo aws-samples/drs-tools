@@ -45,8 +45,8 @@ The following parameter options are supported:
 ### Single Account Deployment
 In a single account architecture, you deploy the synchronizer to the AWS account and region where DRS is configured.
 
-1. Update the defaults and overrides for [launch configuration settings](#launch-settings-for-drill-recovery-instances), [launch template settings](#ec2-launch-template-settings-for-drill-recovery-instances), and [replication configuration settings](#replication-settings-for-source-servers) to meet your requirements.
-2. Update the [dr-accounts.yml](./cfn/lambda/drs-configuration-synchronizer/src/configuration/dr-accounts.yml) file with your account number.
+1. Rename the default directory under the configuration subdirectory with the same name as your AWS account id (ex: 012345678901)
+2. Update the defaults and overrides for [launch configuration settings](#launch-settings-for-drill-recovery-instances), [launch template settings](#ec2-launch-template-settings-for-drill-recovery-instances), and [replication configuration settings](#replication-settings-for-source-servers) to meet your requirements within the directory.
 3. Set the **AWS_ACCESS_KEY_ID**, **AWS_SECRET_ACCESS_KEY**, and **AWS_SESSION_TOKEN** AWS environment variables with the appropriate credentials.  You will also need to set the environment variable **AWS_DEFAULT_REGION** to the region you are deploying to.
 4. Run the provided python deployment script **deploy.py** with your preferred options:
 ```shell
@@ -56,9 +56,10 @@ python3 deploy.py --solution-account <Your AWS account ID where you are deployin
 ### Multi-Account Deployment
 In a multi-account architecture, the synchronizer will assume a role in each configured DRS account.
 
-1.  Follow the same instructions as [Single Account Deployment](#single-account-deployment).
-2.  In addition, update the [dr-accounts.yml](./cfn/lambda/drs-configuration-synchronizer/src/configuration/dr-accounts.yml) file with each additional account that the synchronizer should update.
-3.  For each AWS account the synchronizer should operate on, deploy the IAM role that the synchronizer wils assume with the following command:
+1. Complete the single account deployment steps for the AWS account where you want the solution to operate. 
+2. Copy the single-account subdirectory under the `configuration` subdirectory for each additional AWS account you want to synchronize configurations.
+3. Update the files within each AWS account subdirectory as needed.
+4. For each additional AWS account the synchronizer should operate on, deploy the IAM role that the synchronizer will assume with the following command:
 ```shell
 python3 deploy.py --account-role-only --solution-account <Your AWS account ID where you are deploying the solution>
 ```
@@ -138,6 +139,8 @@ The following EC2 launch template settings may be specified. For a list of possi
 - `PrivateDnsNameOptions`
 - `MaintenanceOptions`
 - `DisableApiStop`
+- 'SecurityGroupsIds',
+- 'NetworkInterfaces'
 
 ### Ignored EC2 launch template settings
 
@@ -181,7 +184,9 @@ Monitoring:
 ```
 
 ## Automatic Target Subnet Assignment
-The VPC subnet in which a drill or recovery server is launched is determined by the subnet id specified in the EC2 launch template associated with the DRS source server. The configuration synchronizer automatically populates the subnet id in the EC2 launch template based on the private IP address of the source server and a list of available subnets. 
+This feature is of particular value for customers with on-premises networks targeting AWS DRS.  A customer may configure their AWS DRS networking environment to mirror their on-premises network.  The private ip addresses of the origin servers may also need to be the same in the DR environment.
+
+The VPC subnet in which a drill or recovery server is launched is determined by the subnet id specified in the EC2 launch template associated with the DRS source server. The configuration synchronizer automatically populates the subnet id in the EC2 launch template based on the private IP address of the source server and a list of available subnets.
 
 A subnet is considered available based on the following criteria:
 - The subnet belongs to a VPC owned by a DRS target AWS account defined in source control
@@ -280,6 +285,8 @@ The following example `server-tag-mapping.csv` shows how two tags, `priority-gro
 
 DRS synchronizer features may be disabled for a given DRS source server by listing that server's hostname in the file named `config-sync-exclusions.csv`.
 
+If you want to disable a feature for all servers, then only one entry should be made in this file with the Name set to `*`.
+
 ### config-sync-exclusions.csv
 
 The first column specifies the hostname of the DRS source server. The remaining columns specify features of the DRS synchronizer that should be disabled for the given server. If a given source server is not listed in this file, then all features are enabled for that server.
@@ -290,6 +297,17 @@ The following example `config-sync-exclusions.csv` will disable all features for
 |---------|------------|-----------------------------| 
 | SERVERA | false      | true                        | 
 | SERVERB | true       |                             | 
+
+You can execute a dry run of the solution by setting Name to `*` and ExcludeAll to `true`.
+| Name    | ExcludeAll | ExcludeNetworkConfiguration |
+|---------|------------|-----------------------------|
+| *       | true       |                             |
+
+You can exclude automatic network configuration for all servers by setting `ExcludeAll` to `false`, and `ExcludeNetworkConfiguration` to `true`.
+| Name    | ExcludeAll | ExcludeNetworkConfiguration |
+|---------|------------|-----------------------------|
+| *       | true       |                             |
+
 
 ### Feature Descriptions
 

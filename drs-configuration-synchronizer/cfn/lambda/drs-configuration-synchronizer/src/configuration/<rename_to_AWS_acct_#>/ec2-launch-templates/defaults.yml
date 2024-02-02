@@ -4,3 +4,4 @@ MetadataOptions:
   InstanceMetadataTags: enabled
 Monitoring:
   Enabled: true
+InstanceType: m5.2xlarge

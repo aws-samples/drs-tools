@@ -1,2 +1,0 @@
-# List of account id's that the drs-configuration-synchronizer should operate on.  You must include the drs-configuration-synchronizer account id as well if it will operate on its account.
-- account_id: ""

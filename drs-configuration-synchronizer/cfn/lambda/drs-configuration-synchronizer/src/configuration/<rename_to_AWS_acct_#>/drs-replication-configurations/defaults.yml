@@ -1,12 +1,14 @@
 associateDefaultSecurityGroup: true
-createPublicIP: true
-dataPlaneRouting: PUBLIC_IP
-defaultLargeStagingDiskType: "GP3"
+createPublicIP: false
+dataPlaneRouting: PRIVATE_IP
+defaultLargeStagingDiskType: "GP2"
 #ebsEncryption: CUSTOM
 #ebsEncryptionKeyArn: arn:aws:kms:us-east-1:111111111111:key/11111111-1111-1111-1111-111111111111
-#replicationServersSecurityGroupsIDs:
-#  - sg-abcdef12345678901
-#stagingAreaSubnetId: subnet-abcdef12345678901
+# replicationServersSecurityGroupsIDs:
+#    - sg-xxxxxxxxxxxxxxxxx
+#stagingAreaSubnetId:  'subnet-xxxxxxxxxxxxxxxxx'
+replicationServerInstanceType: m5.4xlarge
 stagingAreaTags:
   managed-by-dr-synchronizer: "true"
+
 useDedicatedReplicationServer: false

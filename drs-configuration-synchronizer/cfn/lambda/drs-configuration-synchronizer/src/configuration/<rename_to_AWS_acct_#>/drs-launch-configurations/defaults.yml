@@ -1,0 +1,4 @@
+copyPrivateIp: false
+copyTags: true
+launchDisposition: STARTED
+targetInstanceTypeRightSizingMethod: NONE

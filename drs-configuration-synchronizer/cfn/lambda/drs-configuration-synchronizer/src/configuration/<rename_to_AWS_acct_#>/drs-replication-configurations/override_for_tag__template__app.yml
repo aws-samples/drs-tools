@@ -1,0 +1,12 @@
+copyPrivateIp: false
+copyTags: true
+launchDisposition: STARTED
+#targetInstanceTypeRightSizingMethod: BASIC
+replicationServerInstanceType:  m5.2xlarge
+replicationServersSecurityGroupsIDs:
+  - sg-xxxxxxxxxxxxxxxxx
+stagingAreaSubnetId:  subnet-xxxxxxxxxxxxxxxxx
+
+# disable monitoring
+Monitoring:
+  Enabled: true

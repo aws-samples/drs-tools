@@ -1,4 +1,0 @@
-copyPrivateIp: true
-copyTags: true
-launchDisposition: STARTED
-targetInstanceTypeRightSizingMethod: BASIC

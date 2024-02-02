@@ -1,0 +1,7 @@
+MetadataOptions:
+  HttpEndpoint: enabled
+  HttpTokens: required
+  InstanceMetadataTags: enabled
+Monitoring:
+  Enabled: true
+InstanceType: m5.4xlarge

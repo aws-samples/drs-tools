@@ -1,0 +1,15 @@
+MetadataOptions:
+  HttpEndpoint: enabled
+  HttpTokens: required
+  InstanceMetadataTags: enabled
+Monitoring:
+  Enabled: true
+NetworkInterfaces:
+  -
+    Groups:
+      - sg-xxxxxxxxxxxxxxxxx
+    SubnetId: subnet-xxxxxxxxxxxxxxxxx
+InstanceType: "m5.xlarge"
+IamInstanceProfile:
+  Arn: arn:aws:iam::xxxxxxxxxxxx:instance-profile/SSMInstanceProfile
+

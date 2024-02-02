@@ -1,0 +1,8 @@
+copyPrivateIp: false
+copyTags: true
+launchDisposition: STARTED
+#targetInstanceTypeRightSizingMethod: BASIC
+# disable monitoring
+replicationServerInstanceType: m5.xlarge
+Monitoring:
+  Enabled: false

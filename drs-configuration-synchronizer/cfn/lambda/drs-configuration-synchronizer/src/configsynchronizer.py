@@ -79,6 +79,8 @@ EC2_LAUNCH_TEMPLATE_KEYS = (
     'PrivateDnsNameOptions',
     'MaintenanceOptions',
     'DisableApiStop',
+    'SecurityGroupsIds',
+    'NetworkInterfaces'
 )
 
 # These are dynamically processed by this lambda function, so they are disallowed in configuration files.
@@ -367,14 +369,6 @@ def synchronize_all():
     """
     Synchronize source servers for all AWS accounts found "dr-accounts.yml"
     """
-    logger.info("loading host to tag mapping")
-
-    with open(CONFIGURATION_PATH.joinpath("server-tag-mapping.csv")) as file:
-        tag_mapping = create_host_to_tag_mapping(file)
-
-    logger.info("loading list of excluded servers")
-    with open(CONFIGURATION_PATH.joinpath(CONFIGURATION_PATH_EXCLUSIONS)) as file:
-        features = FeaturesConfiguration(exclusions=create_server_exclusion_list(file))
 
     unique_id = str(uuid.uuid1())
     run_report = RunReport()
@@ -382,12 +376,23 @@ def synchronize_all():
     inventory_report_file = tempfile.NamedTemporaryFile('w', newline='', encoding="utf-8", delete=False)
     inventory_report = InventoryReport(inventory_report_file)
 
-    # For each account, perform synchronization of all source servers not in excluded_servers
-    for account in read_yaml_configuration_file(CONFIGURATION_PATH.joinpath("dr-accounts.yml")):
-        logger.append_keys(account=account["account_id"])
-        logger.info("synchronizing account")
+    accounts = [o for o in os.listdir(CONFIGURATION_PATH) if os.path.isdir(os.path.join(CONFIGURATION_PATH,o))]
+    for account in accounts:
+        logger.append_keys(account=account)
+
+        logger.info("synchronizing account {}".format(account))
+
+        logger.info("loading host to tag mapping")
+        with open(CONFIGURATION_PATH.joinpath(account, "server-tag-mapping.csv")) as file:
+            tag_mapping = create_host_to_tag_mapping(file)
+
+        logger.info("loading list of excluded servers")
+        with open(CONFIGURATION_PATH.joinpath(account, CONFIGURATION_PATH_EXCLUSIONS)) as file:
+            features = FeaturesConfiguration(exclusions=create_server_exclusion_list(file))
+
+
         try:
-            synchronize_account(account["account_id"], tag_mapping, features, unique_id, run_report, inventory_report)
+            synchronize_account(account, tag_mapping, features, unique_id, run_report, inventory_report)
             logger.info("finished synchronizing account")
         except Exception as e:
             logger.error("Exception synchronizing account: {}".format(e))
@@ -490,121 +495,125 @@ def synchronize_account(account_id: str, tag_mapping, features: FeaturesConfigur
     :param inventory_report: instance of InventoryReport
     :return:
     """
-    role_name = os.environ["DR_CONFIGURATION_SYNCHRONIZER_ROLE_NAME"]
-    role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
-    logger.info("assuming role in account", extra=dict(role_arn=role_arn))
-    assumed_role_object = sts.assume_role(
-        RoleArn=role_arn,
-        RoleSessionName="DRConfigurationSynchronizer"
-    )
-    credentials = assumed_role_object['Credentials']
 
-    ec2 = boto3.client(
-        'ec2',
-        aws_access_key_id=credentials['AccessKeyId'],
-        aws_secret_access_key=credentials['SecretAccessKey'],
-        aws_session_token=credentials['SessionToken'],
-        config=boto_client_config
-    )
+    if features.is_excluded("*"):
+        logger.info("Exclusion * found for account {}, skipping...".format(account_id))
+    else:
+        role_name = os.environ["DR_CONFIGURATION_SYNCHRONIZER_ROLE_NAME"]
+        role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        logger.info("assuming role in account", extra=dict(role_arn=role_arn))
+        assumed_role_object = sts.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName="DRConfigurationSynchronizer"
+        )
+        credentials = assumed_role_object['Credentials']
 
-    drs = boto3.client(
-        'drs',
-        aws_access_key_id=credentials['AccessKeyId'],
-        aws_secret_access_key=credentials['SecretAccessKey'],
-        aws_session_token=credentials['SessionToken'],
-        config=boto_client_config
-    )
-    subnet_cidr_mapping = create_subnet_cidr_mapping(ec2)
+        ec2 = boto3.client(
+            'ec2',
+            aws_access_key_id=credentials['AccessKeyId'],
+            aws_secret_access_key=credentials['SecretAccessKey'],
+            aws_session_token=credentials['SessionToken'],
+            config=boto_client_config
+        )
 
-    sync = ConfigurationSynchronizer(ec2, drs, features, unique_id, account_id=account_id,
-                                     cidr_subnet_mapping=subnet_cidr_mapping,
-                                     server_tag_mapping=tag_mapping,
-                                     ec2_launch_template_configurations=FileConfiguration(
-                                         CONFIGURATION_PATH.joinpath(CONFIGURATION_PATH_EC2_LAUNCH_TEMPLATES)),
-                                     drs_launch_configurations=FileConfiguration(
-                                         CONFIGURATION_PATH.joinpath(CONFIGURATION_PATH_DRS_LAUNCH_CONFIGURATIONS)),
-                                     drs_replication_configurations=FileConfiguration(
-                                         CONFIGURATION_PATH.joinpath(CONFIGURATION_PATH_DRS_REPLICATION_CONFIGURATIONS))
-                                     )
-    logger.info("retrieving list of source servers")
-    source_server_paginator = drs.get_paginator("describe_source_servers")
-    # for every DRS source server, attempt to synchronize configuration
-    for page in source_server_paginator.paginate(filters={}):
-        for server in page["items"]:
-            report.increment_servers_processed()
-            source_server_id = server["sourceServerID"]
-            logger.append_keys(server=source_server_id)
-            launch_configuration = drs.get_launch_configuration(sourceServerID=source_server_id)
-            del launch_configuration["ResponseMetadata"]
+        drs = boto3.client(
+            'drs',
+            aws_access_key_id=credentials['AccessKeyId'],
+            aws_secret_access_key=credentials['SecretAccessKey'],
+            aws_session_token=credentials['SessionToken'],
+            config=boto_client_config
+        )
+        subnet_cidr_mapping = create_subnet_cidr_mapping(ec2)
 
-            server_host = server.get("sourceProperties", {}).get("identificationHints", {}).get("hostname")
+        sync = ConfigurationSynchronizer(ec2, drs, features, unique_id, account_id=account_id,
+                                         cidr_subnet_mapping=subnet_cidr_mapping,
+                                         server_tag_mapping=tag_mapping,
+                                         ec2_launch_template_configurations=FileConfiguration(
+                                             CONFIGURATION_PATH.joinpath(account_id, CONFIGURATION_PATH_EC2_LAUNCH_TEMPLATES)),
+                                         drs_launch_configurations=FileConfiguration(
+                                             CONFIGURATION_PATH.joinpath(account_id, CONFIGURATION_PATH_DRS_LAUNCH_CONFIGURATIONS)),
+                                         drs_replication_configurations=FileConfiguration(
+                                             CONFIGURATION_PATH.joinpath(account_id, CONFIGURATION_PATH_DRS_REPLICATION_CONFIGURATIONS))
+                                         )
+        logger.info("retrieving list of source servers")
+        source_server_paginator = drs.get_paginator("describe_source_servers")
+        # for every DRS source server, attempt to synchronize configuration
+        for page in source_server_paginator.paginate(filters={}):
+            for server in page["items"]:
+                report.increment_servers_processed()
+                source_server_id = server["sourceServerID"]
+                logger.append_keys(server=source_server_id)
+                launch_configuration = drs.get_launch_configuration(sourceServerID=source_server_id)
+                del launch_configuration["ResponseMetadata"]
 
-            if server_host is None:
-                logger.error("drs did not return hostname for server")
-                continue
+                server_host = server.get("sourceProperties", {}).get("identificationHints", {}).get("hostname")
 
-            # take first segment from hostname returned from DRS
-            server_host = server_host.lower().split('.')[0]
+                if server_host is None:
+                    logger.error("drs did not return hostname for server")
+                    continue
 
-            logger.append_keys(host=server_host)
+                # take first segment from hostname returned from DRS
+                server_host = server_host.lower().split('.')[0]
 
-            if features.is_excluded(server_host):
-                logger.info(f"skipping server to due to {EXCLUSION_ALL}")
-                continue
+                logger.append_keys(host=server_host)
 
-            if exclude_network_config := features.is_network_configuration_excluded(server_host):
-                logger.info("will skip network configuration for this server")
+                if features.is_excluded(server_host):
+                    logger.info(f"skipping server to due to {EXCLUSION_ALL}")
+                    continue
 
-            source_server_ip = None
-            subnet_ids = None
-            security_group_ids = None
-            launch_template_ip = None
-            copy_private_ip = None
+                if exclude_network_config := features.is_network_configuration_excluded("*") or features.is_network_configuration_excluded(server_host):
+                    logger.info("will skip network configuration for this server")
 
-            try:
-                (source_server_ip, subnet_ids, security_group_ids,
-                 launch_template_ip) = sync.synchronize_launch_template(
-                    server, launch_configuration, exclude_network_config)
-            except ClientError as e:
-                log_error("service error while synchronizing launch template: %s", e)
-            except SynchronizerException as e:
-                log_error("error while synchronizing launch template: %s", e)
+                source_server_ip = None
+                subnet_ids = None
+                security_group_ids = None
+                launch_template_ip = None
+                copy_private_ip = None
 
-            try:
-                copy_private_ip = sync.synchronize_launch_configuration(
-                    server, launch_configuration, exclude_network_config)
-            except ClientError as e:
-                log_error("service error while synchronizing launch configuration: %s", e)
-            except SynchronizerException as e:
-                log_error("error while synchronizing launch configuration: %s", e)
+                try:
+                    (source_server_ip, subnet_ids, security_group_ids,
+                     launch_template_ip) = sync.synchronize_launch_template(
+                        server, launch_configuration, exclude_network_config)
+                except ClientError as e:
+                    log_error("service error while synchronizing launch template: %s", e)
+                except SynchronizerException as e:
+                    log_error("error while synchronizing launch template: %s", e)
 
-            try:
-                sync.synchronize_tags(server_host, server["arn"], server["tags"], exclude_network_config)
-            except ClientError as e:
-                log_error("service error while synchronizing source server tags: %s", e)
-            except SynchronizerException as e:
-                log_error("error while synchronizing source server tags: %s", e)
+                try:
+                    copy_private_ip = sync.synchronize_launch_configuration(
+                        server, launch_configuration, exclude_network_config)
+                except ClientError as e:
+                    log_error("service error while synchronizing launch configuration: %s", e)
+                except SynchronizerException as e:
+                    log_error("error while synchronizing launch configuration: %s", e)
 
-            try:
-                sync.synchronize_replication_settings(server)
-            except ClientError as e:
-                log_error("service error while synchronizing replication configuration: %s", e)
-            except SynchronizerException as e:
-                log_error("error while synchronizing replication configuration: %s", e)
+                try:
+                    sync.synchronize_tags(server_host, server["arn"], server["tags"], exclude_network_config)
+                except ClientError as e:
+                    log_error("service error while synchronizing source server tags: %s", e)
+                except SynchronizerException as e:
+                    log_error("error while synchronizing source server tags: %s", e)
 
-            inventory_report.add_server(
-                aws_account_id=account_id,
-                source_server_id=server["sourceServerID"],
-                hostname=server_host,
-                is_network_configuration_excluded=exclude_network_config,
-                copy_private_ip=copy_private_ip,
-                source_server_ip=source_server_ip,
-                launch_template_ip=launch_template_ip,
-                launch_template_subnet=subnet_ids,
-                launch_template_security_group=security_group_ids
-            )
+                try:
+                    sync.synchronize_replication_settings(server)
+                except ClientError as e:
+                    log_error("service error while synchronizing replication configuration: %s", e)
+                except SynchronizerException as e:
+                    log_error("error while synchronizing replication configuration: %s", e)
 
-            logger.remove_keys(["server", "host"])
+                inventory_report.add_server(
+                    aws_account_id=account_id,
+                    source_server_id=server["sourceServerID"],
+                    hostname=server_host,
+                    is_network_configuration_excluded=exclude_network_config,
+                    copy_private_ip=copy_private_ip,
+                    source_server_ip=source_server_ip,
+                    launch_template_ip=launch_template_ip,
+                    launch_template_subnet=subnet_ids,
+                    launch_template_security_group=security_group_ids
+                )
+
+                logger.remove_keys(["server", "host"])
 
 
 class FileConfiguration:
@@ -905,7 +914,7 @@ class ConfigurationSynchronizer:
         tags_desired = self.server_tag_mapping.get(server_host, {})
 
         if exclude_network_config:
-            tags_desired["exclude-network-configuration"] = "true"
+            tags_desired["exclude-auto-network-configuration-matching"] = "true"
 
         tags_current = {}
         for tag_key in tags_desired:
