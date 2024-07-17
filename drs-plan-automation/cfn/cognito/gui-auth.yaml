@@ -176,7 +176,7 @@ Resources:
           - UserPoolClientRole
           - Arn
       Handler: index.handler
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Timeout: 300
   UserPoolClientLambdaPolicy:
     Type: AWS::IAM::Policy

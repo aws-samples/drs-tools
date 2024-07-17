@@ -28,7 +28,7 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: public.ecr.aws/sam/build-nodejs14.x
+        Image: public.ecr.aws/sam/build-nodejs16.x
         EnvironmentVariables:
           - Name: drs_s3_bucket_name
             Value:
