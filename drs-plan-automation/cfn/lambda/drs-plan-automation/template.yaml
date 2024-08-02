@@ -47,6 +47,8 @@ Resources:
             Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-name-${env}"
           DRS_EXECUTION_TABLE_NAME:
             Fn::ImportValue: !Sub "drs-plan-automation-plan-execution-table-name-${env}"
+          DRS_APPLICATION_S3_BUCKET:
+            !Sub "drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}"
 
   DRSPlanAutomationStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -284,7 +286,18 @@ Resources:
               - Fn::Join:
                   - "/"
                   - - Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-arn-${env}"
-                    - index/*
+                    - index/*          
+          - Sid: "S3BucketAccess"
+            Effect: "Allow"
+            Action: 
+              -  s3:Get*
+              -  s3:DeleteObject
+              -  s3:PutBucketVersioning
+              -  s3:PutObject
+            Resource: 
+              - !Sub "drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}"
+              - !Sub "drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}/*"
+        
 
 
   DRSPlanAutomationStateMachineRole:
