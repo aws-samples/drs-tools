@@ -24,6 +24,7 @@ const express = require('express')
 // AWS.config.update({region: process.env.TABLE_REGION});
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
+const s3 = new AWS.S3();
 
 const stepfunctions = new AWS.StepFunctions();
 
@@ -31,6 +32,8 @@ const applicationTableName = process.env.DRS_TABLE_NAME;
 const executionTableName = process.env.DRS_EXECUTION_TABLE_NAME;
 const accountsTableName = process.env.DRS_ACCOUNTS_TABLE_NAME;
 const resultsTableName = process.env.DRS_RESULTS_TABLE_NAME;
+
+//const s3Bucket = process.env.DRS_APPLICATION_BUCKET;
 // if (process.env.ENV && process.env.ENV !== "NONE") {
 //   tableName = tableName + '-' + process.env.ENV;
 // }
@@ -184,7 +187,46 @@ app.get("/results", function (req, res) {
             res.json({error: `Could not retrieve results for application: ${query.AppName} and plan: ${query.PlanName}: ${err}`});
         } else {
             console.log("SUCCESS: " + JSON.stringify(data))
-            res.json({success: 'retrieved results', data: data.Items});
+            //res.json({success: 'retrieved results', data: data.Items});
+
+            const items = data.Items;
+            let remaining = items.length;
+
+            if (remaining === 0) {
+                res.json({ success: 'retrieved results', data: items });
+                return;
+            }
+
+            items.forEach(function (item, index) {
+                if (item.s3Bucket && item.s3Key) {
+                    let s3Params = {
+                        Bucket: item.s3Bucket,
+                        Key: item.s3Key
+                    };
+
+                    s3.getObject(s3Params, function (err, s3Data) {
+                        if (err) {
+                            console.log("ERROR: " + JSON.stringify(err));
+                            res.statusCode = 500;
+                            res.json({ error: `Could not retrieve S3 object: ${err}` });
+                            return;
+                        } else {
+                            let s3ObjectData = JSON.parse(s3Data.Body.toString());
+                            items[index] = { ...item, ...s3ObjectData };
+                        }
+
+                        remaining -= 1;
+                        if (remaining === 0) {
+                            res.json({ success: 'retrieved results', data: items });
+                        }
+                    });
+                } else {
+                    remaining -= 1;
+                    if (remaining === 0) {
+                        res.json({ success: 'retrieved results', data: items });
+                    }
+                }
+            });
         }
     });
 });
@@ -221,7 +263,33 @@ app.get("/result", function (req, res) {
             res.json({error: `Could not retrieve result for AppName__PlanName: ${query.AppName__PlanName} and execution id: ${query.ExecutionId}: ${err}`});
         } else {
             console.log("SUCCESS: " + JSON.stringify(data))
-            res.json({success: 'result retrieved', data: data.Items[0]});
+            //res.json({success: 'result retrieved', data: data.Items[0]});
+
+            if (data.Items.length > 0) {
+                let item = data.Items[0];
+
+                // Check if the item is stored in S3
+                if (item.s3Bucket && item.s3Key) {
+                    let s3Params = {
+                        Bucket: item.s3Bucket,
+                        Key: item.s3Key
+                    };
+
+                    s3.getObject(s3Params, (err, s3Data) => {
+                        if (err) {
+                            console.log("ERROR: " + JSON.stringify(err));
+                            res.statusCode = 500;
+                            res.json({ error: `Could not retrieve S3 object: ${err}` });
+                        } else {
+                            let s3ObjectData = JSON.parse(s3Data.Body.toString());
+                            item = { ...item, ...s3ObjectData };
+                            res.json({ success: 'retrieved results', data: item });
+                        }
+                    });
+                } else {
+                    res.json({ success: 'retrieved results', data: item });
+                }
+            }
         }
     });
 });
