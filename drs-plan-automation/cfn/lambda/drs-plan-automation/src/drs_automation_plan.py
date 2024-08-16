@@ -19,6 +19,7 @@ AWS_REGION = getenv('AWS_REGION')
 DRS_APPLICATION_TABLE = getenv('DRS_APPLICATION_TABLE_NAME')
 DRS_RESULTS_TABLE = getenv('DRS_RESULTS_TABLE_NAME')
 DRS_ASSUME_ROLE_NAME = getenv('DRS_ASSUME_ROLE_NAME')
+DRS_APPLICATION_BUCKET = getenv('DRS_APPLICATION_S3_BUCKET')
 
 ddb_deserializer = TypeDeserializer()
 ddb_serializer = TypeSerializer()
@@ -94,13 +95,26 @@ def python_obj_to_dynamo_obj(python_obj: dict) -> dict:
     }
 
 
-def record_status(event, ddb_client):
+def record_status(event, ddb_client, s3_client):
+    MAX_SIZE_IN_KB = 400
     result = event['result']
     # find all datetimes and replace them:
 
     logger.debug("serializing {}".format(result))
     serialized_result = python_obj_to_dynamo_obj(result)
     logger.debug("serialized {}".format(serialized_result))
+    data_str = json.dumps(result)
+    data_size_kb = len(data_str) / 1024
+    if data_size_kb >= 0.9 * MAX_SIZE_IN_KB:
+        s3_key = f"/{DRS_RESULTS_TABLE}/{result['AppId_PlanId']}/{result['ExecutionId']}"
+        write_s3_data(s3_client, s3_key, data_str)
+        new_result = {
+            'AppId_PlanId': result['AppId_PlanId'],
+            'ExecutionId': result['ExecutionId'],
+            's3Bucket': DRS_APPLICATION_BUCKET,
+            's3Key' : s3_key
+        }
+        serialized_result = python_obj_to_dynamo_obj(new_result)
 
     try:
         response = ddb_client.put_item(
@@ -112,6 +126,23 @@ def record_status(event, ddb_client):
         raise err
     else:
         return response
+		
+
+def write_s3_data(s3_client, s3_key, data) -> bool:
+    try:
+        s3_client.put_object(
+            Bucket=DRS_APPLICATION_BUCKET,
+            Key=s3_key, 
+            Body=data,
+            Metadata={
+                "Content-Type": "text/json"
+            },
+            ServerSideEncryption='aws:kms'
+            )
+        return True
+    except Exception as err:
+        logger.error(err)
+        raise err
 
 
 def send_notification(topic_arn, subject, message, sns_client):
@@ -444,6 +475,7 @@ def handler(event, context):
         sns_client = boto3_client('sns', execution_region, credentials)
         ssm_client = boto3_client('ssm', execution_region, credentials)
         ddb_client = boto3_client("dynamodb", execution_region)
+        s3_client = boto3_client('s3', execution_region)
 
         isdrill = event.get('isdrill')
         user = event.get('user')
@@ -491,7 +523,7 @@ def handler(event, context):
                 result['log'].append(message)
                 result['status'] = 'failed'
                 record_completion(result)
-                record_status(event, ddb_client)
+                record_status(event, ddb_client, s3_client)
                 raise Exception('ERROR:  Key Waves is missing from application')
             else:
                 plan_details['Waves'] = waves
@@ -578,7 +610,7 @@ def handler(event, context):
             if no_servers_found:
                 result['status'] = 'failed'
                 result['log'].append(notification_message)
-                record_status(event, ddb_client)
+                record_status(event, ddb_client, s3_client)
                 if topic_arn:
                     send_notification(topic_arn, notification_subject, notification_message, sns_client)
                 return event
@@ -592,7 +624,7 @@ def handler(event, context):
             if topic_arn:
                 send_notification(topic_arn, notification_subject, notification_message, sns_client)
 
-            record_status(event, ddb_client)
+            record_status(event, ddb_client, s3_client)
             return event
 
         # The update_status action can be modified to interrogate the servers and provide more application specific
@@ -632,7 +664,7 @@ def handler(event, context):
             if not action_status_result:
                 record_wave_completion(result, current_wave_number)
                 record_completion(result)
-                record_status(event, ddb_client)
+                record_status(event, ddb_client, s3_client)
                 notification_message += "\nFailed: {}".format(action_status['message'])
                 logger.error(notification_message)
                 if topic_arn:
@@ -725,7 +757,7 @@ def handler(event, context):
                     send_notification(topic_arn, notification_subject, notification_message, sns_client)
 
             logger.info(notification_message)
-            record_status(event, ddb_client)
+            record_status(event, ddb_client, s3_client)
             return event
 
         if action == 'update_wave_status':
@@ -800,7 +832,7 @@ def handler(event, context):
             logger.debug('returning event: {}'.format(event))
 
             logger.info(notification_message)
-            record_status(event, ddb_client)
+            record_status(event, ddb_client, s3_client)
             return event
 
         if action == 'all_waves_completed':
@@ -814,7 +846,7 @@ def handler(event, context):
 
             if topic_arn:
                 send_notification(topic_arn, notification_subject, notification_message, sns_client)
-            record_status(event, ddb_client)
+            record_status(event, ddb_client, s3_client)
             return event
     except Exception:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -823,6 +855,6 @@ def handler(event, context):
         result['log'].append(message)
         result['status'] = 'failed'
         record_completion(result)
-        record_status(event, ddb_client)
+        record_status(event, ddb_client, s3_client)
         return event
         raise
