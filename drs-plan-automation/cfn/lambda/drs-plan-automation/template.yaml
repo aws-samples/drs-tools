@@ -295,8 +295,8 @@ Resources:
               -  s3:PutBucketVersioning
               -  s3:PutObject
             Resource: 
-              - !Sub "drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}"
-              - !Sub "drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}/*"
+              - !Sub "arn:aws:s3:::drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}"
+              - !Sub "arn:aws:s3:::drs-s3-plan-automation-${AWS::AccountId}-${AWS::Region}/*"
         
 
 
