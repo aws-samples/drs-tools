@@ -94,10 +94,8 @@ def python_obj_to_dynamo_obj(python_obj: dict) -> dict:
     }
 
 
-def record_status(event, ddb_client):
-    result = event['result']
+def record_status(result, ddb_client):
     # find all datetimes and replace them:
-
     logger.debug("serializing {}".format(result))
     serialized_result = python_obj_to_dynamo_obj(result)
     logger.debug("serialized {}".format(serialized_result))
@@ -110,8 +108,38 @@ def record_status(event, ddb_client):
     except Exception as err:
         logger.error("Error putting item {} into table: {}: {}".format(serialized_result, DRS_RESULTS_TABLE, err))
         raise err
-    else:
-        return response
+
+def get_execution_result(app_id_plan_id, execution_arn, ddb_client):
+    """
+    Retrieves an execution result from DynamoDB.
+
+    :param app_id_plan_id: The combined AppId_PlanId key.
+    :param execution_arn: The execution ID.
+    :param ddb_client: The DynamoDB client.
+    :return: The retrieved item as a dictionary or None if not found.
+    """
+    logger.debug(f"Retrieving item with AppId_PlanId: {app_id_plan_id}, ExecutionId: {execution_arn}")
+
+    try:
+        response = ddb_client.get_item(
+            TableName=DRS_RESULTS_TABLE,
+            Key={
+                "AppId_PlanId": {"S": app_id_plan_id},
+                "ExecutionId": {"S": execution_arn}
+            }
+        )
+    except Exception as err:
+        logger.error(f"Error getting result with AppId_PlanId: {app_id_plan_id}, ExecutionId: {execution_arn} from table {DRS_RESULTS_TABLE}: {err}")
+        raise err
+
+    # Check if item exists and deserialize it
+    if "Item" in response:
+        deserializer = TypeDeserializer()
+        deserialized_item = {key: deserializer.deserialize(value) for key, value in response["Item"].items()}
+        return deserialized_item
+
+    return None  # Return None if the item is not found
+
 
 
 def send_notification(topic_arn, subject, message, sns_client):
@@ -213,13 +241,12 @@ def check_action_status(executionid, ssm_client):
         return {'status': 'failed', 'message': message}
 
 
-def start_wave_recovery(event, drs_client):
+def start_wave_recovery(event, result, drs_client):
     application = event['application']
     wave_plan = application['wave_plan']
     wave_number = application['current_wave_number']
     isdrill = event['isdrill']
     topic_arn = event['topic_arn']
-    result = event['result']
     servers = wave_plan[wave_number]
 
     if isdrill:
@@ -255,6 +282,7 @@ def start_wave_recovery(event, drs_client):
         result['Waves'][wave_number]['drs']['status'] = 'failed'
         result['Waves'][wave_number]['status'] = 'failed'
         result['status'] = 'failed'
+        event['status'] = 'failed'
         record_wave_completion(result, wave_number)
         record_completion(result)
         return event
@@ -296,15 +324,13 @@ def check_recovery_status(jobID, drs_client):
     return recovery_status
 
 
-def process_wave(event, wave_number, recovery_type, ssm_client, drs_client):
+def process_wave(event, result, wave_number, recovery_type, ssm_client, drs_client):
     application = event['application']
     plan_details = event['plan_details']
     waves = plan_details['Waves']
     wave_plan = application['wave_plan']
     application_name = application["AppName"]
     topic_arn = event['topic_arn']
-
-    result = event['result']
 
     notification_subject = "Update for {} {}".format(application_name, recovery_type)
 
@@ -335,17 +361,16 @@ def process_wave(event, wave_number, recovery_type, ssm_client, drs_client):
     # check for pre_actions and start first one...
     application['action_type'] = "pre"
     if len(prewaveactions):
-        process_action(application, 0, event, prewaveactions, wave_number, ssm_client)
+        process_action(application, 0, event, result, prewaveactions, wave_number, ssm_client)
     else:
         # no prewaveactions, start wave recovery...
         application['all_actions_completed'] = True
         result['Waves'][wave_number]['log'].append("No PreWave Actions")
-        event = start_wave_recovery(event, drs_client)
+        event = start_wave_recovery(event, result, drs_client)
     return event
 
 
-def process_action(application, current_action_number, event, actions, wave_number, ssm_client):
-    result = event['result']
+def process_action(application, current_action_number, event, result, actions, wave_number, ssm_client):
     action_type = application['action_type']
 
     if action_type == "pre":
@@ -381,6 +406,7 @@ def process_action(application, current_action_number, event, actions, wave_numb
         result['Waves'][wave_number]['status'] = "failed"
         result['Waves'][wave_number]['log'] = message
         result['status'] = "failed"
+        event['status'] = "failed"
         record_wave_completion(result, wave_number)
         record_completion(result)
 
@@ -450,25 +476,32 @@ def handler(event, context):
         logger.info("IsDrill is: {}".format(isdrill))
 
         # TODO:  Consider server side validation of form input.
-        result = event.get('result', {
-            'AppId_PlanId': "{}_{}".format(application_details["AppId"], plan_details["PlanId"]),
-            'planDetails': plan_details,
-            'ExecutionId': execution_arn,
-            'status': 'pending',
-            'isDrill': isdrill,
-            'topicArn': topic_arn,
-            'user': user,
-            'AppName': application["AppName"],
-            "KeyName": application["KeyName"],
-            "KeyValue": application["KeyValue"],
-            "Owner": application.get("Owner", ""),
-            'log': [],
-            'SourceServers': [],
-            'ExecutionStartTime': datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f%z"),
-            'ExecutionStartTimeMs': round(time.time() * 1000),
-            'AccountId': account_id,
-            'Region': execution_region
-        })
+        app_id_plan_id = "{}_{}".format(application_details["AppId"], plan_details["PlanId"])
+        result = get_execution_result(app_id_plan_id, execution_arn, ddb_client)
+
+        if result:
+            logger.debug('Retrieved execution: {}'.format(result))
+        else:
+            event['status'] = "pending"
+            result = {
+                'AppId_PlanId': "{}_{}".format(application_details["AppId"], plan_details["PlanId"]),
+                'planDetails': plan_details,
+                'ExecutionId': execution_arn,
+                'status': 'pending',
+                'isDrill': isdrill,
+                'topicArn': topic_arn,
+                'user': user,
+                'AppName': application["AppName"],
+                "KeyName": application["KeyName"],
+                "KeyValue": application["KeyValue"],
+                "Owner": application.get("Owner", ""),
+                'log': [],
+                'SourceServers': [],
+                'ExecutionStartTime': datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f%z"),
+                'ExecutionStartTimeMs': round(time.time() * 1000),
+                'AccountId': account_id,
+                'Region': execution_region
+            }
 
         if isdrill:
             recovery_type = "drill"
@@ -482,7 +515,6 @@ def handler(event, context):
         application_name = application.get('AppName')
 
         if action == 'begin':
-            event["result"] = result
             waves = plan_details.get('Waves', None)
 
             if not waves:
@@ -490,8 +522,9 @@ def handler(event, context):
                 logger.error(message)
                 result['log'].append(message)
                 result['status'] = 'failed'
+                event['status'] = 'failed'
                 record_completion(result)
-                record_status(event, ddb_client)
+                record_status(result, ddb_client)
                 raise Exception('ERROR:  Key Waves is missing from application')
             else:
                 plan_details['Waves'] = waves
@@ -577,8 +610,9 @@ def handler(event, context):
             # End immediately if a wave is found with no servers.
             if no_servers_found:
                 result['status'] = 'failed'
+                event['status'] = 'failed'
                 result['log'].append(notification_message)
-                record_status(event, ddb_client)
+                record_status(result, ddb_client)
                 if topic_arn:
                     send_notification(topic_arn, notification_subject, notification_message, sns_client)
                 return event
@@ -587,12 +621,13 @@ def handler(event, context):
             application['all_waves_completed'] = False
             current_wave_number = 0
             result['status'] = 'started'
+            event['status'] = 'started'
 
-            event = process_wave(event, current_wave_number, recovery_type, ssm_client, drs_client)
+            event = process_wave(event, result, current_wave_number, recovery_type, ssm_client, drs_client)
             if topic_arn:
                 send_notification(topic_arn, notification_subject, notification_message, sns_client)
 
-            record_status(event, ddb_client)
+            record_status(result, ddb_client)
             return event
 
         # The update_status action can be modified to interrogate the servers and provide more application specific
@@ -632,7 +667,7 @@ def handler(event, context):
             if not action_status_result:
                 record_wave_completion(result, current_wave_number)
                 record_completion(result)
-                record_status(event, ddb_client)
+                record_status(result, ddb_client)
                 notification_message += "\nFailed: {}".format(action_status['message'])
                 logger.error(notification_message)
                 if topic_arn:
@@ -662,6 +697,7 @@ def handler(event, context):
                     'status'] = 'timeout'
                 result['Waves'][current_wave_number]['status'] = 'timeout'
                 result['status'] = 'timeout'
+                event['status'] = 'timeout'
                 result['log'].append(message)
                 notification_message += "Maximum wait time of {} met.\n".format(max_wait_time)
                 if topic_arn:
@@ -676,6 +712,7 @@ def handler(event, context):
                     'status'] = 'failed'
                 result['Waves'][current_wave_number]['status'] = 'failed'
                 result['status'] = 'failed'
+                event['status'] = 'failed'
                 result['log'].append(notification_message)
                 record_wave_completion(result, current_wave_number)
                 record_completion(result)
@@ -704,7 +741,7 @@ def handler(event, context):
                         logger.info("starting wave recovery")
                         notification_message += "Starting Server Recovery for Wave {}\nServers: {}\n".format(
                             current_wave_number, wave_plan[current_wave_number])
-                        event = start_wave_recovery(event, drs_client)
+                        event = start_wave_recovery(event, result, drs_client)
                     if action_type == "post":
                         if is_last_wave:
                             notification_message = "All waves completed.\n"
@@ -713,19 +750,19 @@ def handler(event, context):
                         else:
                             current_wave_number += 1
                             notification_message = "Starting next wave {}\n".format(current_wave_number)
-                            event = process_wave(event, current_wave_number, recovery_type, ssm_client, drs_client)
+                            event = process_wave(event, result, current_wave_number, recovery_type, ssm_client, drs_client)
                 else:
                     # process next action
                     current_action_number += 1
                     notification_message += "Starting next action {}\n".format(current_action_number)
-                    process_action(application, current_action_number, event, actions,
+                    process_action(application, current_action_number, event, result, actions,
                                    current_wave_number, ssm_client)
 
                 if topic_arn:
                     send_notification(topic_arn, notification_subject, notification_message, sns_client)
 
             logger.info(notification_message)
-            record_status(event, ddb_client)
+            record_status(result, ddb_client)
             return event
 
         if action == 'update_wave_status':
@@ -753,6 +790,7 @@ def handler(event, context):
             if total_wait_time >= max_wait_time:
                 notification_message += "Maximum wait time of {} reached.".format(total_wait_time)
                 result['status'] = 'failed'
+                event['status'] = 'failed'
                 result['log'].append(notification_message)
                 result['Waves'][current_wave_number]['drs']['status'] = 'timeout'
                 result['Waves'][current_wave_number]['status'] = 'timeout'
@@ -775,7 +813,7 @@ def handler(event, context):
                 # check for post_actions and start first one...
                 if len(postwaveactions):
                     application['action_type'] = "post"
-                    process_action(application, 0, event, postwaveactions,
+                    process_action(application, 0, event, result, postwaveactions,
                                    current_wave_number, ssm_client)
                     notification_message += "Starting First Post Wave Action\n"
                 else:
@@ -791,7 +829,7 @@ def handler(event, context):
                         current_wave_number = current_wave_number + 1
                         notification_message += "No Post Wave Actions, Starting Next Wave #{}".format(
                             current_wave_number + 1)
-                        event = process_wave(event, current_wave_number, recovery_type, ssm_client, drs_client)
+                        event = process_wave(event, result, current_wave_number, recovery_type, ssm_client, drs_client)
                 if topic_arn:
                     send_notification(topic_arn, notification_subject, notification_message, sns_client)
             else:
@@ -800,11 +838,12 @@ def handler(event, context):
             logger.debug('returning event: {}'.format(event))
 
             logger.info(notification_message)
-            record_status(event, ddb_client)
+            record_status(result, ddb_client)
             return event
 
         if action == 'all_waves_completed':
             result['status'] = 'completed'
+            event['status'] = 'completed'
             record_completion(result)
 
             notification_subject = "Update for {} {}".format(application_name, recovery_type)
@@ -814,15 +853,16 @@ def handler(event, context):
 
             if topic_arn:
                 send_notification(topic_arn, notification_subject, notification_message, sns_client)
-            record_status(event, ddb_client)
+            record_status(result, ddb_client)
             return event
     except Exception:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         message = repr(traceback.format_exception(exc_type, exc_value, exc_traceback))
         print(message)
         result['log'].append(message)
+        event['status'] = 'failed'
         result['status'] = 'failed'
         record_completion(result)
-        record_status(event, ddb_client)
+        record_status(result, ddb_client)
         return event
         raise

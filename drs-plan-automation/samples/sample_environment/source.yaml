@@ -112,7 +112,7 @@ Resources:
           Fn::Base64: !Sub |
             #!/usr/bin/env bash
             yum install -y amazon-cloudwatch-agent
-            wget -O ./aws-replication-installer-init.py https://aws-elastic-disaster-recovery-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/latest/linux/aws-replication-installer-init.py
+            wget -O ./aws-replication-installer-init.py https://aws-elastic-disaster-recovery-${TargetDRSRegion}.s3.${TargetDRSRegion}.amazonaws.com/latest/linux/aws-replication-installer-init.py
             sudo python3 aws-replication-installer-init.py --region ${TargetDRSRegion} --no-prompt
         TagSpecifications:
           - ResourceType: instance

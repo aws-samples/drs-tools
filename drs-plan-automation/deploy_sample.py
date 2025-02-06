@@ -145,7 +145,12 @@ def deploy(source_region, solution_region, prefix, environment, prompt, cleanup)
     helper.process_stack(prompt, sample_ssm_automation_opsitem_stack_name, sample_ssm_automation_opsitem_stack_template,
                          None, creds, solution_region)
     logger.info("Deploying sample environment with VPC, subnets, and EC2 instances with DRS agent installed.")
-    helper.process_stack(prompt, sample_environment_stack_name, sample_environment_stack_template, None, creds, source_region)
+
+    sample_env_params = [{
+        'ParameterKey': 'TargetDRSRegion',
+        'ParameterValue': source_region
+    }]
+    helper.process_stack(prompt, sample_environment_stack_name, sample_environment_stack_template, sample_env_params, creds, source_region)
     account_record = {
         'AccountId': account_number,
         'Region': solution_region

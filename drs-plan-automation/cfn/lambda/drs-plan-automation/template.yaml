@@ -83,15 +83,15 @@ Resources:
                 DetermineActionsState:
                   Choices:
                     - And:
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           IsPresent: true
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           StringEquals: failed
                       Next: ApplicationFailed
                     - And:
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           IsPresent: true
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           StringEquals: timeout
                       Next: ApplicationTimeout
                     - And:
@@ -110,9 +110,9 @@ Resources:
                 DetermineWavePlanState:
                   Choices:
                     - And:
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           IsPresent: true
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           StringEquals: failed
                       Next: ApplicationFailed
                     - And:
@@ -137,9 +137,9 @@ Resources:
                 DetermineWaveState:
                   Choices:
                     - And:
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           IsPresent: true
-                        - Variable: "$.result.status"
+                        - Variable: "$.status"
                           StringEquals: failed
                       Next: ApplicationFailed
                     - And:
@@ -279,6 +279,7 @@ Resources:
           - Effect: Allow
             Action:
               - dynamodb:PutItem
+              - dynamodb:GetItem
             Resource:
               - Fn::ImportValue: !Sub "drs-plan-automation-plan-results-table-arn-${env}"
               - Fn::Join:
